@@ -1,0 +1,33 @@
+{
+  "name": "bravely",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:migrate": "node --import tsx --env-file-if-exists=.env.local scripts/migrate.ts",
+    "keycloak:setup": "node --env-file-if-exists=.env.local scripts/keycloak-setup.mjs"
+  },
+  "dependencies": {
+    "next": "^16.0.0",
+    "openid-client": "^6.0.0",
+    "pg": "^8.16.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "prettier": "^3.9.6",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.0"
+  }
+}
