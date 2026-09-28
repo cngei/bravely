@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:migrate": "node --import tsx --env-file-if-exists=.env.local scripts/migrate.ts",
+    "db:seed": "node --import tsx --env-file-if-exists=.env.local scripts/seed.ts",
     "keycloak:setup": "node --env-file-if-exists=.env.local scripts/keycloak-setup.mjs"
   },
   "dependencies": {
