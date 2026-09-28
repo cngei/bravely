@@ -35,10 +35,17 @@ function seal(data: unknown) {
   return Buffer.concat([iv, cipher.getAuthTag(), body]).toString('base64url');
 }
 function unseal(data: string): LoginIdentity {
-  const b = Buffer.from(data, 'base64url'),
-    cipher = createDecipheriv('aes-256-gcm', key(), b.subarray(0, 12));
-  cipher.setAuthTag(b.subarray(12, 28));
-  return JSON.parse(Buffer.concat([cipher.update(b.subarray(28)), cipher.final()]).toString());
+  try {
+    const b = Buffer.from(data, 'base64url'),
+      cipher = createDecipheriv('aes-256-gcm', key(), b.subarray(0, 12));
+    cipher.setAuthTag(b.subarray(12, 28));
+    return JSON.parse(Buffer.concat([cipher.update(b.subarray(28)), cipher.final()]).toString());
+  } catch (error) {
+    // A rotated SESSION_SECRET or a tampered cookie is a stale session, not a server
+    // fault. Configuration errors raised by key() must still surface as themselves.
+    if (error instanceof AppError) throw error;
+    throw new AppError(401, 'SESSION_EXPIRED', 'Sessione non più valida. Accedi nuovamente.');
+  }
 }
 let configPromise: Promise<oidc.Configuration> | undefined;
 export function config() {

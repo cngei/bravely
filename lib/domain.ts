@@ -361,6 +361,17 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
       e.history.push({ at: now, actor: a.id, action: e.status, reason: e.reason });
       return e;
     }
+    default: {
+      // Assigning to `never` turns a forgotten Command variant into a compile error
+      // instead of a silent `undefined` response.
+      const unhandled: never = c;
+      assert(
+        false,
+        400,
+        'UNKNOWN_COMMAND',
+        `Comando non supportato: ${(unhandled as Command).type}`,
+      );
+    }
   }
 }
 export function canReadEvidence(s: State, a: Actor, e: Evidence): boolean {
