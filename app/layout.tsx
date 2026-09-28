@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-export const metadata = { title: 'Bravely — JSON', description: 'Logica e API Bravely' };
+import './globals.css';
+export const metadata = { title: 'Bravely', description: 'Percorso skill di reparto' };
 export default function Layout({ children }: { children: ReactNode }) {
   return (
     <html lang="it">
-      <body style={{ fontFamily: 'system-ui', margin: '2rem', maxWidth: 1200 }}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

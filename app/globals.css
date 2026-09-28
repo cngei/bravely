@@ -1,0 +1,315 @@
+:root {
+  --ink: #1b1b1f;
+  --muted: #5f6470;
+  --line: #dcdfe6;
+  --surface: #f7f8fa;
+  --blue: #1d4ed8;
+  --amber: #b45309;
+  --green: #15803d;
+  --red: #b91c1c;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  color: var(--ink);
+  font:
+    16px/1.5 system-ui,
+    sans-serif;
+  margin: 0;
+}
+
+main {
+  margin: 0 auto;
+  max-width: 62rem;
+  padding: 2rem 1.5rem 4rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.125rem;
+  margin: 2.5rem 0 0.75rem;
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+p {
+  margin: 0.5rem 0;
+}
+
+.topbar {
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.error {
+  color: var(--red);
+  font-size: 0.875rem;
+  margin: 0.5rem 0 0;
+}
+
+.stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.card-head {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.badge {
+  background: var(--surface);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.2rem 0.6rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge[data-status='completed'] {
+  background: #e7f6ec;
+  color: var(--green);
+}
+
+.badge[data-status='pending'] {
+  background: #fdf1e0;
+  color: var(--amber);
+}
+
+.badge[data-status='rejected'] {
+  background: #fdeaea;
+  color: var(--red);
+}
+
+.badge[data-status='available'],
+.badge[data-status='started'] {
+  background: #e9eefb;
+  color: var(--blue);
+}
+
+button,
+input,
+select,
+textarea {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+}
+
+textarea {
+  resize: vertical;
+  width: 100%;
+}
+
+button {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+button:disabled {
+  cursor: progress;
+  opacity: 0.55;
+}
+
+button[data-variant='ghost'] {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+button[data-variant='danger'] {
+  background: #fff;
+  border-color: var(--red);
+  color: var(--red);
+}
+
+label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+fieldset {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 0.75rem 0 0;
+  padding: 0.75rem;
+}
+
+legend {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  padding: 0 0.35rem;
+}
+
+dl {
+  display: grid;
+  gap: 0.25rem 0.75rem;
+  grid-template-columns: max-content 1fr;
+  margin: 0.5rem 0 0;
+}
+
+dt {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+dd {
+  margin: 0;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  padding: 0.25rem 0.7rem;
+  text-decoration: none;
+}
+
+.chip[data-active] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+/* Skill tree: HTML nodes positioned over an SVG that draws only the edges, so titles
+   wrap normally and node state reuses the same palette as the dashboard badges. */
+.tree-scroll {
+  margin-top: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.tree {
+  margin: 0 auto;
+  position: relative;
+}
+
+.tree-edges {
+  inset: 0;
+  position: absolute;
+}
+
+.tree-edges path {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+
+.tree-edges path[data-implicit] {
+  stroke-dasharray: 5 5;
+}
+
+.tree-node {
+  align-items: flex-start;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0.5rem 0.65rem;
+  position: absolute;
+}
+
+.tree-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.tree-meta {
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tree-node[data-status='completed'] {
+  background: #e7f6ec;
+  border-color: var(--green);
+}
+
+.tree-node[data-status='completed'] .tree-meta {
+  color: var(--green);
+}
+
+.tree-node[data-status='pending'] {
+  background: #fdf1e0;
+  border-color: var(--amber);
+}
+
+.tree-node[data-status='pending'] .tree-meta {
+  color: var(--amber);
+}
+
+.tree-node[data-status='rejected'] {
+  background: #fdeaea;
+  border-color: var(--red);
+}
+
+.tree-node[data-status='rejected'] .tree-meta {
+  color: var(--red);
+}
+
+.tree-node[data-status='available'],
+.tree-node[data-status='started'] {
+  border-color: var(--blue);
+}
+
+.tree-node[data-status='available'] .tree-meta,
+.tree-node[data-status='started'] .tree-meta {
+  color: var(--blue);
+}
+
+.tree-node[data-status='locked'] {
+  background: var(--surface);
+  border-style: dashed;
+}
