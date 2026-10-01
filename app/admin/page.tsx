@@ -5,6 +5,7 @@ import { layout } from '@/lib/tree';
 import { SkillEditor } from '../ui/skill-editor';
 import { AchievementsEditor } from '../ui/achievements-editor';
 import { ExternalTroops, ExternalUsers } from '../ui/external-admin';
+import { Banner } from '../ui/banner';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Amministrazione · Bravely' };
@@ -88,19 +89,24 @@ export default async function AdminPage() {
 
 function Header() {
   return (
-    <div className="topbar">
-      <div>
-        <h1>Amministrazione</h1>
-        <p className="muted">Catalogo delle skill e dei prerequisiti</p>
-      </div>
-      <div className="row">
-        <a className="muted" href="/tree">
+    <>
+      <Banner>
+        <a className="chip" data-active href="/admin">
+          Admin
+        </a>
+        <a className="chip" href="/tree">
           Albero
         </a>
-        <a className="muted" href="/">
-          ← Dashboard
+        <a className="chip" href="/">
+          Dashboard
         </a>
+      </Banner>
+      <div className="topbar">
+        <div>
+          <h1>Amministrazione</h1>
+          <p className="muted">Catalogo delle skill, achievement e organizzazioni esterne</p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

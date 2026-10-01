@@ -13,6 +13,7 @@ import { AppError } from '@/lib/errors';
 import { SkillCard } from '../../ui/skill-card';
 import { Answers, EvidenceTimes } from '../../ui/evidence-view';
 import { STATUS_LABELS } from '../../ui/labels';
+import { Banner } from '../../ui/banner';
 
 export const dynamic = 'force-dynamic';
 
@@ -138,19 +139,21 @@ export default async function SkillDetailPage({
 
 function Header({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="topbar">
-      <div>
-        <h1>{title}</h1>
-        {subtitle && <p className="muted">{subtitle}</p>}
-      </div>
-      <div className="row">
-        <a className="muted" href="/tree">
+    <>
+      <Banner>
+        <a className="chip" href="/tree">
           ← Albero
         </a>
-        <a className="muted" href="/">
+        <a className="chip" href="/">
           Dashboard
         </a>
+      </Banner>
+      <div className="topbar">
+        <div>
+          <h1>{title}</h1>
+          {subtitle && <p className="muted">{subtitle}</p>}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

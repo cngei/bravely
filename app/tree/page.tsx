@@ -5,6 +5,7 @@ import { AppError } from '@/lib/errors';
 import { layout } from '@/lib/tree';
 import { STATUS_LABELS } from '../ui/labels';
 import { SkillGraph } from '../ui/skill-graph';
+import { Banner } from '../ui/banner';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Albero delle skill · Bravely' };
@@ -162,14 +163,21 @@ export default async function TreePage({
 
 function Header({ subtitle }: { subtitle: string }) {
   return (
-    <div className="topbar">
-      <div>
-        <h1>Albero delle skill</h1>
-        {subtitle && <p className="muted">{subtitle}</p>}
+    <>
+      <Banner>
+        <a className="chip" href="/">
+          Dashboard
+        </a>
+        <a className="chip" data-active href="/tree">
+          Albero
+        </a>
+      </Banner>
+      <div className="topbar">
+        <div>
+          <h1>Albero delle skill</h1>
+          {subtitle && <p className="muted">{subtitle}</p>}
+        </div>
       </div>
-      <a className="muted" href="/">
-        ← Dashboard
-      </a>
-    </div>
+    </>
   );
 }

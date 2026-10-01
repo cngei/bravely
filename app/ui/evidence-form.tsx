@@ -75,7 +75,7 @@ export function EvidenceForm({
   return (
     <form onSubmit={onSubmit}>
       {forms.length > 1 && (
-        <div className="row" style={{ marginBottom: '0.5rem' }}>
+        <div className="row tabs" style={{ marginBottom: '0.5rem' }}>
           {forms.map((option) => (
             <button
               key={option.color}

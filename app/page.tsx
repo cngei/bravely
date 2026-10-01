@@ -6,6 +6,7 @@ import { SkillCard } from './ui/skill-card';
 import { CreatePatrolForm, ReviewForm } from './ui/leader-forms';
 import { ExplorerTable } from './ui/explorer-table';
 import { Answers, EvidenceTimes } from './ui/evidence-view';
+import { Banner } from './ui/banner';
 import { STATUS_LABELS } from './ui/labels';
 
 export const dynamic = 'force-dynamic';
@@ -20,30 +21,27 @@ const ROLES: Record<string, string> = {
 
 function TopBar({ name, role }: { name: string; role: string }) {
   return (
-    <div className="topbar">
-      <div>
-        <h1>Bravely</h1>
-        <p className="muted">
-          {name} · {ROLES[role] ?? role}
-        </p>
-      </div>
-      <div className="row">
+    <>
+      <Banner>
         {role === 'admin' && (
-          <a className="muted" href="/admin">
-            Amministrazione
+          <a className="chip" href="/admin">
+            Admin
           </a>
         )}
-        <a className="muted" href="/tree">
-          Albero delle skill
-        </a>
-        <a className="muted" href="/api/dashboard">
-          JSON
+        <a className="chip" href="/tree">
+          Albero
         </a>
         <form action="/auth/logout" method="post">
           <button data-variant="ghost">Esci</button>
         </form>
+      </Banner>
+      <div className="topbar">
+        <div>
+          <h1>Ciao, {name.split(' ')[0]}</h1>
+          <p className="muted">{ROLES[role] ?? role}</p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -254,15 +252,17 @@ export default async function Home() {
     const unauthenticated = error instanceof AppError && error.status === 401;
     return (
       <main>
-        <h1>Bravely</h1>
-        <p>
+        <Banner />
+        <p style={{ marginTop: '1.5rem' }}>
           {unauthenticated
             ? 'Accedi per visualizzare i dati del tuo percorso.'
             : error instanceof AppError
               ? error.message
               : 'Servizio non disponibile. Verifica Postgres e le migrazioni.'}
         </p>
-        <a href="/auth/login">Accedi con Keycloak</a>
+        <a className="button-link" href="/auth/login">
+          Accedi con Keycloak
+        </a>
       </main>
     );
   }

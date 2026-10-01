@@ -89,11 +89,15 @@ export function ExternalUsers({
             <tbody>
               {users.map((user) => (
                 <tr key={user.subject}>
-                  <td>{user.name}</td>
-                  <td>{user.role === 'leader' ? 'capo' : 'esploratore'}</td>
-                  <td>{user.troopIds.map(nameOf).join(', ')}</td>
-                  <td>
-                    <code style={{ fontSize: '0.75rem' }}>{user.subject}</code>
+                  <td data-label="Nome">
+                    <strong>{user.name}</strong>
+                  </td>
+                  <td data-label="Ruolo">{user.role === 'leader' ? 'capo' : 'esploratore'}</td>
+                  <td data-label="Reparti">{user.troopIds.map(nameOf).join(', ')}</td>
+                  <td data-label="Subject">
+                    <code style={{ fontSize: '0.75rem', overflowWrap: 'anywhere' }}>
+                      {user.subject}
+                    </code>
                   </td>
                   <td>
                     <button type="button" data-variant="ghost" onClick={() => load(user)}>

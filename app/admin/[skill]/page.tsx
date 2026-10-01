@@ -2,6 +2,7 @@ import { currentActor } from '@/lib/service';
 import { readState } from '@/lib/db';
 import { AppError } from '@/lib/errors';
 import { FormBuilder } from '../../ui/form-builder';
+import { Banner } from '../../ui/banner';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,14 +57,18 @@ export default async function SkillFormsPage({ params }: { params: Promise<{ ski
 
 function Header({ title }: { title: string }) {
   return (
-    <div className="topbar">
-      <div>
-        <h1>{title}</h1>
-        <p className="muted">Form della skill</p>
+    <>
+      <Banner>
+        <a className="chip" href="/admin">
+          ← Amministrazione
+        </a>
+      </Banner>
+      <div className="topbar">
+        <div>
+          <h1>{title}</h1>
+          <p className="muted">Form della skill</p>
+        </div>
       </div>
-      <a className="muted" href="/admin">
-        ← Amministrazione
-      </a>
-    </div>
+    </>
   );
 }

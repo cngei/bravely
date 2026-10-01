@@ -1,12 +1,37 @@
+/* Bravely — visual system.
+   Built around the association green #2c6a46. Blue and amber are the two form paths, so they must
+   be distinguishable from each other, from the green, and from the rejection red, while staying
+   legible as text on white. Each hue has a dark token used for text, borders and filled chips, and
+   a soft tint used for surfaces — two per hue is enough and keeps the palette from sprawling.
+
+   Everything is rounded: no explicit corners anywhere. Buttons and chips are pills, containers use
+   the radius scale below.
+
+   The audience is 12–16 year olds on phones, so: generous touch targets, 16px inputs (anything
+   smaller makes iOS Safari zoom on focus), and the roster tables collapse into cards on narrow
+   screens rather than scrolling sideways. */
+
 :root {
-  --ink: #1b1b1f;
-  --muted: #5f6470;
-  --line: #dcdfe6;
-  --surface: #f7f8fa;
-  --blue: #1d4ed8;
-  --amber: #b45309;
-  --green: #15803d;
-  --red: #b91c1c;
+  --green: #2c6a46;
+  --green-soft: #e3efe7;
+  --blue: #15607f;
+  --blue-soft: #e4eff4;
+  --amber: #9c5a06;
+  --amber-soft: #fbefdc;
+  --red: #9f2d20;
+  --red-soft: #fbeae6;
+
+  --ink: #1a211d;
+  --muted: #5e6a63;
+  --line: #dde4df;
+  --surface: #f4f7f5;
+  --page: #fbfcfb;
+
+  --r-sm: 12px;
+  --r: 18px;
+  --r-lg: 26px;
+  --pill: 999px;
+
   color-scheme: light;
 }
 
@@ -15,31 +40,39 @@
 }
 
 body {
+  background: var(--page);
   color: var(--ink);
   font:
-    16px/1.5 system-ui,
+    16px/1.55 system-ui,
     sans-serif;
   margin: 0;
+  -webkit-text-size-adjust: 100%;
 }
 
 main {
   margin: 0 auto;
-  max-width: 62rem;
-  padding: 2rem 1.5rem 4rem;
+  max-width: 60rem;
+  padding: 1.5rem 1.15rem 5rem;
 }
 
 h1 {
-  font-size: 1.5rem;
+  font-size: 1.45rem;
+  letter-spacing: -0.015em;
   margin: 0;
 }
 
 h2 {
-  font-size: 1.125rem;
-  margin: 2.5rem 0 0.75rem;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  margin: 2.25rem 0 0.75rem;
 }
 
 h3 {
-  font-size: 1rem;
+  font-size: 0.975rem;
+  margin: 0;
+}
+
+h4 {
   margin: 0;
 }
 
@@ -47,14 +80,103 @@ p {
   margin: 0.5rem 0;
 }
 
-.topbar {
-  align-items: baseline;
-  border-bottom: 1px solid var(--line);
+a {
+  color: var(--green);
+  text-underline-offset: 0.15em;
+}
+
+/* ---------- banner ---------- */
+
+.banner {
+  align-items: center;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgb(255 255 255 / 10%), transparent 60%),
+    linear-gradient(135deg, #2c6a46 0%, #1e4c33 100%);
+  border-radius: var(--r-lg);
+  color: #fff;
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.85rem 1rem;
   justify-content: space-between;
-  padding-bottom: 1rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.banner-identity {
+  align-items: center;
+  color: inherit;
+  display: flex;
+  gap: 0.8rem;
+  text-decoration: none;
+}
+
+.banner-mark {
+  align-items: center;
+  background: rgb(255 255 255 / 16%);
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 50%;
+  display: flex;
+  flex: none;
+  font-size: 1.3rem;
+  font-weight: 800;
+  height: 3rem;
+  justify-content: center;
+  overflow: hidden;
+  width: 3rem;
+}
+
+.banner-mark img {
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.banner-name {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.banner-event {
+  display: block;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  opacity: 0.82;
+}
+
+/* On green the controls invert: a white pill would shout louder than the name. */
+.banner .chip {
+  background: rgb(255 255 255 / 14%);
+  border-color: rgb(255 255 255 / 30%);
+  color: #fff;
+}
+
+.banner .chip[data-active] {
+  background: #fff;
+  border-color: #fff;
+  color: var(--green);
+}
+
+.banner button,
+.banner button[data-variant='ghost'] {
+  background: transparent;
+  border-color: rgb(255 255 255 / 35%);
+  color: #fff;
+}
+
+.banner a:focus-visible,
+.banner button:focus-visible {
+  outline-color: #fff;
+}
+
+.topbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  justify-content: space-between;
+  margin-top: 1.5rem;
 }
 
 .muted {
@@ -77,115 +199,182 @@ p {
 
 .stack {
   display: grid;
+  /* minmax(0, 1fr), not 1fr: a grid track defaults to min-content, so one wide child — a file
+     input, a long word — widens the whole column past the viewport. */
   gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .row {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
+/* ---------- surfaces ---------- */
+
 .card {
+  background: #fff;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 1rem;
+  border-radius: var(--r);
+  padding: 1.05rem 1.15rem;
 }
 
 .card-head {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.6rem 0.9rem;
   justify-content: space-between;
 }
 
-/* Review list: the unverified ones must stand out from the already-decided ones. */
+/* State is carried by a tinted surface rather than a hard edge: a 4px border is exactly the kind
+   of explicit corner this design avoids. */
 .card[data-status='pending'] {
-  border-left: 4px solid var(--amber);
+  background: var(--amber-soft);
+  border-color: #eddcc0;
 }
 
 .card[data-status='approved'] {
-  border-left: 4px solid var(--green);
+  background: var(--green-soft);
+  border-color: #c9dfd1;
 }
 
 .card[data-status='rejected'] {
-  border-left: 4px solid var(--red);
+  background: var(--red-soft);
+  border-color: #f0cfc8;
 }
+
+.card[data-color='blue'] {
+  background: var(--blue-soft);
+  border-color: #cadde6;
+}
+
+.card[data-color='amber'] {
+  background: var(--amber-soft);
+  border-color: #eddcc0;
+}
+
+/* ---------- chips and badges ---------- */
 
 .badge {
   background: var(--surface);
-  border-radius: 999px;
+  border-radius: var(--pill);
   color: var(--muted);
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  padding: 0.2rem 0.6rem;
-  text-transform: uppercase;
+  letter-spacing: 0.015em;
+  padding: 0.28rem 0.7rem;
   white-space: nowrap;
 }
 
 .badge[data-status='completed'] {
-  background: #e7f6ec;
-  color: var(--green);
+  background: var(--green);
+  color: #fff;
 }
 
 .badge[data-status='pending'] {
-  background: #fdf1e0;
-  color: var(--amber);
+  background: var(--amber);
+  color: #fff;
 }
 
 .badge[data-status='rejected'] {
-  background: #fdeaea;
-  color: var(--red);
+  background: var(--red);
+  color: #fff;
 }
 
 .badge[data-status='available'],
 .badge[data-status='started'] {
-  background: #e9eefb;
-  color: var(--blue);
+  background: var(--blue);
+  color: #fff;
 }
+
+.chip {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  color: var(--muted);
+  font-size: 0.875rem;
+  min-height: 2.5rem;
+  padding: 0.55rem 1rem;
+  text-decoration: none;
+}
+
+.chip[data-active] {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+/* ---------- controls ---------- */
 
 button,
 input,
 select,
 textarea {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
+  /* 16px minimum: smaller text makes iOS Safari zoom the page on focus. */
   font: inherit;
-  padding: 0.45rem 0.6rem;
+  padding: 0.6rem 0.75rem;
+}
+
+input,
+select,
+textarea {
+  background: #fff;
+  max-width: 100%;
+  /* Flex items default to min-width:auto, which for a form control resolves to its intrinsic
+     width — so an input inside .row refuses to shrink and pushes the row past the viewport. */
+  min-width: 0;
+}
+
+/* Long ids and Keycloak subjects must break rather than widen the page. */
+code {
+  overflow-wrap: anywhere;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
 }
 
 textarea {
+  border-radius: var(--r);
   resize: vertical;
   width: 100%;
 }
 
-button {
-  background: var(--ink);
-  border-color: var(--ink);
+button,
+.button-link {
+  background: var(--green);
+  border: 1px solid var(--green);
+  border-radius: var(--pill);
   color: #fff;
   cursor: pointer;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  gap: 0.4rem;
+  /* 44px: the smallest comfortable touch target. */
+  min-height: 2.75rem;
+  padding: 0.6rem 1.15rem;
+  text-decoration: none;
 }
 
 button:disabled {
-  cursor: progress;
-  opacity: 0.55;
-}
-
-/* Consultation mode: the questions must read as information, not as an input waiting to be
-   filled, while staying legible — a locked skill is meant to be read. */
-input:disabled,
-select:disabled,
-textarea:disabled {
-  background: var(--surface);
-  color: var(--muted);
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
-button[data-variant='ghost'] {
+button[data-variant='ghost'],
+.button-link[data-variant='ghost'] {
   background: #fff;
   border-color: var(--line);
   color: var(--ink);
@@ -197,50 +386,63 @@ button[data-variant='danger'] {
   color: var(--red);
 }
 
-/* An anchor that looks like a button: used where the action is a navigation, so the element
-   stays a link and keeps middle-click and open-in-new-tab. */
-.button-link {
-  background: var(--ink);
-  border: 1px solid var(--ink);
-  border-radius: 8px;
-  color: #fff;
-  display: inline-block;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  padding: 0.45rem 0.7rem;
-  text-decoration: none;
-}
-
-.button-link[data-variant='ghost'] {
-  background: #fff;
-  border-color: var(--line);
-  color: var(--ink);
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--surface);
+  color: var(--muted);
+  cursor: not-allowed;
 }
 
 label {
   display: block;
   font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+label.row {
   font-weight: 500;
+  margin-bottom: 0;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--green);
+  height: 1.15rem;
+  min-height: 0;
+  padding: 0;
+  width: 1.15rem;
 }
 
 fieldset {
   border: 1px solid var(--line);
-  border-radius: 8px;
-  margin: 0.75rem 0 0;
-  padding: 0.75rem;
+  border-radius: var(--r);
+  margin: 0.85rem 0 0;
+  /* A fieldset carries an implicit min-inline-size: min-content, so without this it refuses to
+     shrink and pushes every card that contains a form past the right edge. */
+  min-width: 0;
+  padding: 0.9rem 1rem;
+}
+
+/* File inputs have a wide intrinsic size (the button plus "nessun file selezionato") and would
+   otherwise set the floor for the whole card. */
+input[type='file'] {
+  width: 100%;
 }
 
 legend {
   color: var(--muted);
   font-size: 0.8125rem;
-  padding: 0 0.35rem;
+  font-weight: 600;
+  padding: 0 0.4rem;
 }
 
 dl {
   display: grid;
-  gap: 0.25rem 0.75rem;
+  gap: 0.3rem 0.85rem;
   grid-template-columns: max-content 1fr;
-  margin: 0.5rem 0 0;
+  margin: 0.65rem 0 0;
 }
 
 dt {
@@ -252,24 +454,25 @@ dd {
   margin: 0;
 }
 
-/* Roster table. Scroll container because three columns with a select inside the last one do not
-   fit a 390px viewport, and squeezing them would be worse than scrolling. */
+/* ---------- tables ---------- */
+
 .table-scroll {
   overflow-x: auto;
 }
 
 table.data {
-  border-collapse: collapse;
-  min-width: 32rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 30rem;
   width: 100%;
 }
 
 table.data th,
 table.data td {
   border-bottom: 1px solid var(--line);
-  padding: 0.6rem 0.5rem;
+  padding: 0.7rem 0.6rem;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 table.data th {
@@ -282,37 +485,18 @@ table.data tr:last-child td {
   border-bottom: none;
 }
 
-.chip {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-  font-size: 0.875rem;
-  padding: 0.25rem 0.7rem;
-  text-decoration: none;
-}
+/* ---------- skill tree ---------- */
 
-.chip[data-active] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #fff;
-}
-
-/* Skill tree: React Flow pans and draws edges, but the nodes stay real DOM so they reuse
-   the same palette as the dashboard badges. Keep the size in step with NODE in lib/tree.ts,
-   since layout() computes coordinates from it. */
 .tree-flow {
-  background: linear-gradient(#f4f8fb 0%, #eef5ef 65%, #e8f1e8 100%);
+  background: linear-gradient(#f2f7f9 0%, #edf4ee 60%, #e6f0e8 100%);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  height: 70vh;
-  margin-top: 1.5rem;
-  min-height: 420px;
+  border-radius: var(--r-lg);
+  height: 68vh;
+  margin-top: 1.25rem;
+  min-height: 380px;
   overflow: hidden;
 }
 
-/* Parallax backdrop. z-index mirrors React Flow's own <Background>, which sits at -1 so it
-   stays behind the node and edge panes. Inset slack keeps the layer edges off-screen while
-   panning, and pointer-events must stay off or the scenery would swallow drags. */
 .tree-scenery {
   inset: 0;
   overflow: hidden;
@@ -321,8 +505,6 @@ table.data tr:last-child td {
   z-index: -1;
 }
 
-/* Bottom-anchored bands, widened past the container so the ends stay off-screen while
-   panning. Height is fixed: the tile is in pixel units, so the silhouette must not stretch. */
 .tree-layer {
   bottom: -24px;
   height: 240px;
@@ -334,11 +516,11 @@ table.data tr:last-child td {
 }
 
 .tree-layer-far {
-  color: #dbe8dd;
+  color: #d6e6da;
 }
 
 .tree-layer-mid {
-  color: #bcd4c0;
+  color: #b2cdb8;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -347,191 +529,13 @@ table.data tr:last-child td {
   }
 }
 
-/* Edges anchor to handles even read-only, so they exist but stay invisible until the
-   admin editor turns them into drag targets. */
 .tree-handle {
   opacity: 0;
 }
 
-/* Skill sheet: bottom sheet on phones, centred dialog from 40rem up. A native <dialog> is
-   positioned by `margin: auto`, so overriding the margin is what moves it to the bottom edge. */
-dialog.sheet {
-  background: #fff;
-  border: none;
-  border-radius: 16px 16px 0 0;
-  box-shadow: 0 -8px 32px rgb(0 0 0 / 18%);
-  margin: auto auto 0;
-  max-height: 88vh;
-  max-width: none;
-  padding: 0;
-  width: 100%;
-}
-
-dialog.sheet::backdrop {
-  background: rgb(0 0 0 / 40%);
-}
-
-.sheet-body {
-  max-height: 88vh;
-  overflow-y: auto;
-  padding: 1.25rem;
-}
-
-.sheet-head {
-  align-items: flex-start;
-  display: flex;
-  gap: 0.75rem;
-}
-
-.sheet-head > div {
-  flex: 1;
-}
-
-.sheet-head h2 {
-  font-size: 1.125rem;
-  margin-bottom: 0.35rem;
-}
-
-.sheet-cta {
-  display: block;
-  margin-top: 1.25rem;
-  text-align: center;
-}
-
-@media (min-width: 40rem) {
-  dialog.sheet {
-    border-radius: 14px;
-    box-shadow: 0 12px 40px rgb(0 0 0 / 22%);
-    margin: auto;
-    max-width: 34rem;
-  }
-}
-
-/* Admin editor: canvas beside a panel, stacking on narrow screens. */
-.editor {
-  display: grid;
-  gap: 1.25rem;
-  grid-template-columns: minmax(0, 1fr) 20rem;
-}
-
-@media (max-width: 56rem) {
-  .editor {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.editor-panel {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  height: fit-content;
-  margin-top: 1.5rem;
-  padding: 1rem;
-}
-
-.editor-panel input[type='text'],
-.editor-panel input:not([type]),
-.editor-panel textarea {
-  width: 100%;
-}
-
-.editor-panel label.row {
-  align-items: center;
-  font-weight: 500;
-}
-
-.editor-panel input[type='checkbox'] {
-  width: auto;
-}
-
-/* Form builder: one block per question, with the colour of its form on the left edge. */
-.card[data-color='blue'] {
-  border-left: 4px solid var(--blue);
-}
-
-.card[data-color='amber'] {
-  border-left: 4px solid var(--amber);
-}
-
-.field-row {
-  background: var(--surface);
-  border-radius: 8px;
-  display: grid;
-  gap: 0.5rem;
-  padding: 0.75rem;
-}
-
-.field-grid {
-  display: grid;
-  gap: 0.5rem 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-}
-
-.field-grid input,
-.field-grid select {
-  width: 100%;
-}
-
-.prereq-list {
-  display: grid;
-  gap: 0.35rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.prereq-list li {
-  align-items: center;
-  display: flex;
-  font-size: 0.875rem;
-  gap: 0.5rem;
-  justify-content: space-between;
-}
-
-.prereq-list button {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-}
-
-.editor-node {
-  background: #fff;
-  border: 1.5px solid var(--line);
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  padding: 0.5rem 0.6rem;
-  width: 184px;
-}
-
-.editor-node[data-scope='troop'] {
-  background: #f4f1e8;
-  border-color: #c9b98f;
-}
-
-.editor-node[data-selected] {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px #e9eefb;
-}
-
-.editor-node-title {
-  font-size: 0.8rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.editor-node-id {
-  color: var(--muted);
-  font-family: ui-monospace, monospace;
-  font-size: 0.65rem;
-}
-
-.editor-node-tags {
-  color: var(--muted);
-  font-size: 0.65rem;
-}
-
 .skill-node {
   align-items: center;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -539,19 +543,18 @@ dialog.sheet::backdrop {
   width: 184px;
 }
 
-/* Rounded card under the emblem. Fixed height with a clamped description: layout() puts
-   every node on a uniform grid, so a taller card would overlap its neighbours. */
 .skill-card {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r);
+  box-shadow: 0 1px 2px rgb(26 33 29 / 6%);
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.12rem;
   min-height: 0;
   overflow: hidden;
-  padding: 0.35rem 0.5rem;
+  padding: 0.45rem 0.6rem;
   text-align: center;
   width: 100%;
 }
@@ -572,20 +575,12 @@ dialog.sheet::backdrop {
   overflow: hidden;
 }
 
-.skill-node[data-status='locked'] .skill-card {
-  background: var(--surface);
-}
-
-.skill-node[data-status='locked'] .skill-name,
-.skill-node[data-status='locked'] .skill-desc {
-  opacity: 0.75;
-}
-
 .skill-emblem {
   align-items: center;
   background: #fff;
   border: 2px solid var(--line);
   border-radius: 50%;
+  box-shadow: 0 2px 6px rgb(26 33 29 / 8%);
   color: var(--muted);
   display: flex;
   height: 62px;
@@ -600,6 +595,7 @@ dialog.sheet::backdrop {
 }
 
 .skill-emblem[data-status='completed'] {
+  background: var(--green-soft);
   border-color: var(--green);
   color: var(--green);
 }
@@ -620,8 +616,8 @@ dialog.sheet::backdrop {
   color: var(--blue);
 }
 
-/* Locked reads as mystery: the emblem is desaturated and softened, but the title below
-   stays sharp so the skill is still identifiable. */
+/* Locked reads as mystery: the emblem is desaturated and softened while the title below stays
+   sharp, so the skill is still identifiable and consultable. */
 .skill-emblem[data-status='locked'] {
   background: var(--surface);
   border-style: dashed;
@@ -632,8 +628,18 @@ dialog.sheet::backdrop {
   opacity: 0.6;
 }
 
-/* Status pip, bottom-right of the emblem. Shape carries the meaning for locked and
-   completed; colour alone only distinguishes which path is in progress. */
+.skill-node[data-status='locked'] .skill-card {
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.skill-node[data-status='locked'] .skill-name,
+.skill-node[data-status='locked'] .skill-desc {
+  opacity: 0.75;
+}
+
+/* Status pip. Shape carries the meaning for locked and completed; colour alone only says which
+   path is in progress. */
 .skill-pip {
   align-items: center;
   background: #fff;
@@ -655,7 +661,7 @@ dialog.sheet::backdrop {
 }
 
 .skill-pip[data-pip='locked'] {
-  background: #868c96;
+  background: #7d8a83;
 }
 
 .skill-pip[data-pip='completed'] {
@@ -672,4 +678,271 @@ dialog.sheet::backdrop {
 
 .skill-pip[data-pip='none'] {
   border-color: var(--line);
+}
+
+/* ---------- skill sheet ---------- */
+
+dialog.sheet {
+  background: #fff;
+  border: none;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  box-shadow: 0 -10px 36px rgb(26 33 29 / 20%);
+  margin: auto auto 0;
+  max-height: 88vh;
+  max-width: none;
+  padding: 0;
+  width: 100%;
+}
+
+dialog.sheet::backdrop {
+  background: rgb(26 33 29 / 45%);
+}
+
+.sheet-body {
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 1.35rem 1.25rem 1.5rem;
+}
+
+.sheet-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.85rem;
+}
+
+.sheet-head > div {
+  flex: 1;
+}
+
+.sheet-head h2 {
+  font-size: 1.15rem;
+  margin-bottom: 0.4rem;
+  margin-top: 0;
+}
+
+.sheet-head button {
+  border-radius: 50%;
+  min-height: 2.5rem;
+  padding: 0;
+  width: 2.5rem;
+}
+
+.sheet-cta {
+  display: flex;
+  margin-top: 1.35rem;
+  width: 100%;
+}
+
+@media (min-width: 40rem) {
+  dialog.sheet {
+    border-radius: var(--r-lg);
+    box-shadow: 0 14px 44px rgb(26 33 29 / 24%);
+    margin: auto;
+    max-width: 34rem;
+  }
+}
+
+/* ---------- admin ---------- */
+
+.editor {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+}
+
+.editor-panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  height: fit-content;
+  margin-top: 1.25rem;
+  padding: 1.15rem;
+}
+
+.editor-panel input,
+.editor-panel textarea,
+.editor-panel select {
+  width: 100%;
+}
+
+.editor-panel input[type='checkbox'],
+.editor-panel input[type='radio'] {
+  width: 1.15rem;
+}
+
+.editor-node {
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r);
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.6rem 0.75rem;
+  width: 184px;
+}
+
+.editor-node[data-scope='troop'] {
+  background: var(--green-soft);
+  border-color: var(--green);
+}
+
+.editor-node[data-selected] {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-soft);
+}
+
+.editor-node-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.editor-node-id {
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.65rem;
+}
+
+.editor-node-tags {
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.prereq-list {
+  display: grid;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.prereq-list li {
+  align-items: center;
+  display: flex;
+  font-size: 0.875rem;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.prereq-list button {
+  font-size: 0.8125rem;
+  min-height: 2.25rem;
+  padding: 0.3rem 0.8rem;
+}
+
+.field-row {
+  background: var(--surface);
+  border-radius: var(--r);
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem 0.95rem;
+}
+
+.field-grid {
+  display: grid;
+  gap: 0.6rem 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.field-grid input,
+.field-grid select {
+  width: 100%;
+}
+
+/* ---------- phones ---------- */
+
+@media (max-width: 40rem) {
+  main {
+    padding: 1.15rem 0.9rem 4rem;
+  }
+
+  h2 {
+    margin-top: 1.85rem;
+  }
+
+  /* Controls take the whole width and the row wraps, instead of being squeezed side by side and
+     overflowing. .row also holds chips and badges, which are <a>/<span> and stay inline. */
+  .row > input:not([type='checkbox']):not([type='radio']),
+  .row > select,
+  .row > textarea,
+  .row > button,
+  .row > .button-link {
+    flex: 1 1 100%;
+  }
+
+  /* The blue/amber switcher stays side by side: they are two alternatives to compare, and
+     stacking them would read as two separate actions. */
+  .tabs > button {
+    flex: 1 1 auto;
+  }
+
+  /* A long question as the <dt> blew the max-content column past the screen. */
+  dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+
+  dt {
+    margin-top: 0.4rem;
+  }
+
+  .editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tree-flow {
+    height: 62vh;
+  }
+
+  /* Tables become cards: three columns with a control in the last one cannot fit a phone, and
+     sideways scrolling hides the thing the reader is looking for. */
+  .table-scroll {
+    overflow-x: visible;
+  }
+
+  table.data,
+  table.data tbody,
+  table.data tr,
+  table.data td {
+    display: block;
+  }
+
+  table.data {
+    min-width: 0;
+  }
+
+  table.data thead {
+    display: none;
+  }
+
+  table.data tr {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    margin-bottom: 0.75rem;
+    padding: 0.9rem 1rem;
+  }
+
+  table.data td {
+    border-bottom: none;
+    padding: 0.2rem 0;
+  }
+
+  table.data td[data-label]::before {
+    color: var(--muted);
+    content: attr(data-label);
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  table.data td:last-child {
+    padding-top: 0.6rem;
+  }
+
+  /* A single-control row should fill the width rather than sit in a narrow column. */
+  table.data select,
+  table.data button {
+    width: 100%;
+  }
 }

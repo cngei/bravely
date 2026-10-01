@@ -69,8 +69,11 @@ function Row({
   const current = patrols.find((patrol) => patrol.id === person.patrolId);
   return (
     <tr>
-      <td>{person.name}</td>
-      <td>
+      {/* data-label drives the phone layout, where the table collapses into cards. */}
+      <td data-label="Esploratore">
+        <strong>{person.name}</strong>
+      </td>
+      <td data-label="Pattuglia">
         {current ? (
           current.name
         ) : (
