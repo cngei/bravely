@@ -4,6 +4,7 @@ import { AppError } from '@/lib/errors';
 import { layout } from '@/lib/tree';
 import { SkillEditor } from '../ui/skill-editor';
 import { AchievementsEditor } from '../ui/achievements-editor';
+import { ExternalTroops, ExternalUsers } from '../ui/external-admin';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Amministrazione · Bravely' };
@@ -24,6 +25,10 @@ export default async function AdminPage() {
       );
 
     const state = await readState();
+    // Only external troops may hold external users — saveExternalUser rejects CNGEI ones.
+    const externalTroops = state.troops
+      .filter((troop) => troop.source === 'external')
+      .map((troop) => ({ id: troop.id, name: troop.name }));
     const tree = layout(state.skills);
     const placed = new Map(tree.nodes.map((node) => [node.skill.id, node]));
 
@@ -53,6 +58,15 @@ export default async function AdminPage() {
 
         <h2>Achievement</h2>
         <AchievementsEditor initial={state.achievements} skillCount={state.skills.length} />
+
+        <h2>Reparti esterni</h2>
+        <p className="muted">
+          Per le organizzazioni diverse dal CNGEI, i cui esploratori non arrivano dalle anagrafiche.
+        </p>
+        <ExternalTroops troops={externalTroops} />
+
+        <h2>Utenti esterni</h2>
+        <ExternalUsers users={state.externalUsers} troops={externalTroops} />
       </main>
     );
   } catch (error) {

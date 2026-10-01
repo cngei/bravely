@@ -170,6 +170,35 @@ export async function saveSkillMetaAction(
   }));
 }
 
+export async function createTroopAction(
+  _previous: ActionResult,
+  data: FormData,
+): Promise<ActionResult> {
+  return run({ type: 'createTroop', name: field(data, 'name') });
+}
+
+// Upsert keyed by the Keycloak subject. The domain deliberately refuses to link accounts by email
+// or name ([README.md:36]), so the admin pastes the `sub` claim from the Keycloak console.
+// Only external troops are accepted as targets, and an explorer must have exactly one — both
+// enforced in execute(), not here.
+export async function saveExternalUserAction(
+  _previous: ActionResult,
+  data: FormData,
+): Promise<ActionResult> {
+  const troopIds = data.getAll('troopIds').map(String).filter(Boolean);
+  // The schema would reject an empty array with a generic message; this one is actionable.
+  if (troopIds.length === 0) return { error: 'Seleziona almeno un reparto esterno.' };
+  return run({
+    type: 'saveExternalUser',
+    user: {
+      subject: field(data, 'subject').trim(),
+      name: field(data, 'name').trim(),
+      role: field(data, 'role') === 'leader' ? 'leader' : 'explorer',
+      troopIds,
+    },
+  });
+}
+
 // saveAchievements replaces the entire array, so the caller must always send the complete
 // list: anything omitted is deleted. That is also the only deletion this domain supports.
 export async function saveAchievementsAction(achievements: Achievement[]): Promise<ActionResult> {
