@@ -175,6 +175,16 @@ button:disabled {
   opacity: 0.55;
 }
 
+/* Consultation mode: the questions must read as information, not as an input waiting to be
+   filled, while staying legible — a locked skill is meant to be read. */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--surface);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 button[data-variant='ghost'] {
   background: #fff;
   border-color: var(--line);

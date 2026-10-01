@@ -21,7 +21,18 @@ export function SkillCard({
   canSubmit: boolean;
   titleOf: (id: string) => string;
 }) {
-  const open = canSubmit && status !== 'completed' && status !== 'locked';
+  // Consultation and authorisation are two different questions, and conflating them was a bug:
+  // the spec requires every skill's forms to be readable, including locked ones, with only the
+  // submission disabled ("consultabili ma non conseguibili").
+  const interactive = canSubmit && status !== 'completed' && status !== 'locked';
+  // Completed skills show the accepted answers instead; a blank disabled form would be noise.
+  const consultable = !interactive && status !== 'completed';
+  const why =
+    status === 'locked'
+      ? 'Completa prima i prerequisiti per poter inviare questa prova.'
+      : canSubmit
+        ? undefined
+        : 'Questa prova è di competenza dei capi reparto: puoi consultarla ma non inviarla.';
   return (
     <article className="card">
       <div className="card-head">
@@ -43,10 +54,16 @@ export function SkillCard({
       )}
       {evidence && status !== 'available' && <Answers evidence={evidence} />}
 
-      {open && (
+      {(interactive || consultable) && (
         <div style={{ marginTop: '0.75rem' }}>
-          {!evidence && <StartSkillForm skillId={skill.id} targetId={targetId} />}
-          <EvidenceForm skillId={skill.id} targetId={targetId} forms={skill.forms} />
+          {interactive && !evidence && <StartSkillForm skillId={skill.id} targetId={targetId} />}
+          <EvidenceForm
+            skillId={skill.id}
+            targetId={targetId}
+            forms={skill.forms}
+            disabled={!interactive}
+            disabledReason={why}
+          />
         </div>
       )}
     </article>

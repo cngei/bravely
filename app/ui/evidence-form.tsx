@@ -26,10 +26,15 @@ export function EvidenceForm({
   skillId,
   targetId,
   forms,
+  disabled,
+  disabledReason,
 }: {
   skillId: string;
   targetId: string;
   forms: SkillForm[];
+  /** Consultation mode: the questions are readable, submission is not possible. */
+  disabled?: boolean;
+  disabledReason?: string;
 }) {
   const [color, setColor] = useState(forms[0].color);
   const [error, setError] = useState<string>();
@@ -38,6 +43,8 @@ export function EvidenceForm({
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // Defence in depth: the button is disabled, but a stray Enter must not submit either.
+    if (disabled) return;
     const data = new FormData(event.currentTarget);
     setError(undefined);
     setBusy(true);
@@ -97,6 +104,7 @@ export function EvidenceForm({
                   rows={3}
                   maxLength={20000}
                   required={entry.required}
+                  disabled={disabled}
                 />
               ) : (
                 <>
@@ -107,6 +115,7 @@ export function EvidenceForm({
                     accept={ACCEPT}
                     multiple={(entry.maxFiles ?? 10) > 1}
                     required={entry.required}
+                    disabled={disabled}
                   />
                   <p className="muted">
                     Da {entry.minFiles ?? 1} a {entry.maxFiles ?? 10} file, max 25 MiB ciascuno.
@@ -118,9 +127,10 @@ export function EvidenceForm({
         </div>
       </fieldset>
       <div className="row" style={{ marginTop: '0.75rem' }}>
-        <button type="submit" disabled={busy}>
+        <button type="submit" disabled={busy || disabled}>
           {busy ? 'Invio…' : 'Invia per la verifica'}
         </button>
+        {disabled && disabledReason && <span className="muted">{disabledReason}</span>}
       </div>
       {error && <p className="error">{error}</p>}
     </form>
