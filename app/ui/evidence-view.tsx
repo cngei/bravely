@@ -3,6 +3,13 @@
 // form as it was at submission time rather than as the catalogue reads today.
 import type { Evidence } from '@/lib/model';
 
+// evidenceView() in lib/domain.ts strips history, submittedBy and reviewedBy before showing one
+// patrol's evidence to another, so these components must accept the redacted shape too. Asking
+// for a full Evidence would make the privacy rules and the UI incompatible.
+export type ViewableEvidence = Omit<Evidence, 'history' | 'submittedBy' | 'reviewedBy'> & {
+  waitingSeconds?: number;
+};
+
 export const waiting = (seconds: number) => {
   const hours = Math.floor(seconds / 3600);
   if (hours >= 24) return `da ${Math.floor(hours / 24)} g`;
@@ -25,7 +32,7 @@ const when = (iso?: string) => {
 };
 
 // Labels the stored answers with the form as it was when submitted, not as it reads today.
-export function Answers({ evidence }: { evidence: Evidence }) {
+export function Answers({ evidence }: { evidence: ViewableEvidence }) {
   const fields = evidence.formSnapshot?.fields ?? [];
   if (!evidence.answers || !fields.length) return null;
   return (
@@ -62,7 +69,7 @@ export function Answers({ evidence }: { evidence: Evidence }) {
 
 // The timestamps the specification asks a reviewer to see. All three are persisted by the domain
 // and were previously never printed anywhere.
-export function EvidenceTimes({ evidence }: { evidence: Evidence & { waitingSeconds?: number } }) {
+export function EvidenceTimes({ evidence }: { evidence: ViewableEvidence }) {
   const started = when(evidence.startedAt);
   const submitted = when(evidence.submittedAt);
   const reviewed = when(evidence.reviewedAt);

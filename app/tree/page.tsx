@@ -9,8 +9,9 @@ import { SkillGraph } from '../ui/skill-graph';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Albero delle skill · Bravely' };
 
-// The card clamps to three lines; this only stops a long description travelling to the client.
-const summarise = (text: string, limit = 180) => {
+// The card clamps to three lines and the sheet shows a preview; the full text lives on the
+// detail page. This only stops a 10000-character description travelling to the client.
+const summarise = (text: string, limit = 400) => {
   if (text.length <= limit) return text;
   const cut = text.slice(0, limit);
   return cut.slice(0, cut.lastIndexOf(' ') + 1 || limit).trimEnd() + '…';
@@ -86,6 +87,19 @@ export default async function TreePage({
                 // them would be serialised into the client payload for three visible lines.
                 description: summarise(node.skill.description),
                 scope: node.skill.scope,
+                missing: (progress.get(node.skill.id)?.missingPrerequisites ?? []).map(titleOf),
+                // What the proof asks for, without the field ids and editing machinery.
+                forms: node.skill.forms.map((form) => ({
+                  color: form.color,
+                  title: form.title,
+                  fields: form.fields.map((entry) => ({
+                    label: entry.label,
+                    type: entry.type,
+                    required: entry.required,
+                    min: entry.minFiles,
+                    max: entry.maxFiles,
+                  })),
+                })),
                 status: status.get(node.skill.id),
                 color: chosenPath.get(`${node.skill.id}:${progress.get(node.skill.id)?.targetId}`),
                 x: node.x,

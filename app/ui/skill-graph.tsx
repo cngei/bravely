@@ -3,7 +3,7 @@
 // React Flow only pans, zooms and draws the edges, so layout() and its tests stay untouched.
 // Handles are rendered but invisible: step 3 of the plan makes them connectable for the
 // admin editor, and edges need them to anchor even in read-only mode.
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Controls,
   Handle,
@@ -16,6 +16,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { STATUS_LABELS } from './labels';
 import { TreeScenery } from './tree-scenery';
+import { SkillSheet, type SheetForm, type SheetSkill } from './skill-sheet';
 
 // Only what a node renders: the full Skill carries forms and descriptions that would be
 // serialised to the client for nothing.
@@ -28,6 +29,10 @@ export interface GraphNode {
   status?: string;
   /** The form colour the patrol actually chose, once there is evidence. */
   color?: 'blue' | 'amber';
+  /** Titles, not ids: the sheet shows them to a human. */
+  missing: string[];
+  /** Enough of each form to say what the proof asks for, without the editing machinery. */
+  forms: SheetForm[];
   x: number;
   y: number;
 }
@@ -126,6 +131,21 @@ function SkillNode({ data }: NodeProps<Node<SkillData>>) {
 const nodeTypes = { skill: SkillNode };
 
 export function SkillGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEdge[] }) {
+  const [openId, setOpenId] = useState<string>();
+  const open = nodes.find((node) => node.id === openId);
+  const sheet: SheetSkill | null = open
+    ? {
+        id: open.id,
+        title: open.title,
+        description: open.description,
+        glyph: initials(open.title),
+        status: open.status,
+        color: open.color,
+        missing: open.missing,
+        forms: open.forms,
+      }
+    : null;
+
   const flowNodes = useMemo<Node<SkillData>[]>(
     () =>
       nodes.map((node) => ({
@@ -167,6 +187,7 @@ export function SkillGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
         nodesDraggable={false}
         nodesConnectable={false}
         edgesFocusable={false}
+        onNodeClick={(_event, node) => setOpenId(node.id)}
         minZoom={0.3}
         maxZoom={1.5}
       >
@@ -174,6 +195,7 @@ export function SkillGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
         <TreeScenery />
         <Controls showInteractive={false} />
       </ReactFlow>
+      <SkillSheet skill={sheet} onClose={() => setOpenId(undefined)} />
     </div>
   );
 }
