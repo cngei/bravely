@@ -2,7 +2,10 @@
 // No React and no IO, so tests/tree.test.ts can pin the geometry and the edge rules.
 import type { Skill } from './model';
 
-export const NODE = { w: 184, h: 72, gapX: 28, gapY: 88 };
+// Sized for a circular emblem above a rounded card holding the title and description.
+// Keep in step with .skill-node in app/globals.css: layout() derives every coordinate from
+// these, and every node must be the same height or the grid would overlap.
+export const NODE = { w: 184, h: 142, gapX: 30, gapY: 76 };
 
 export interface TreeNode {
   skill: Skill;

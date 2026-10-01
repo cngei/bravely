@@ -216,100 +216,202 @@ dd {
   color: #fff;
 }
 
-/* Skill tree: HTML nodes positioned over an SVG that draws only the edges, so titles
-   wrap normally and node state reuses the same palette as the dashboard badges. */
-.tree-scroll {
+/* Skill tree: React Flow pans and draws edges, but the nodes stay real DOM so they reuse
+   the same palette as the dashboard badges. Keep the size in step with NODE in lib/tree.ts,
+   since layout() computes coordinates from it. */
+.tree-flow {
+  background: linear-gradient(#f4f8fb 0%, #eef5ef 65%, #e8f1e8 100%);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  height: 70vh;
   margin-top: 1.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
+  min-height: 420px;
+  overflow: hidden;
 }
 
-.tree {
-  margin: 0 auto;
-  position: relative;
-}
-
-.tree-edges {
+/* Parallax backdrop. z-index mirrors React Flow's own <Background>, which sits at -1 so it
+   stays behind the node and edge panes. Inset slack keeps the layer edges off-screen while
+   panning, and pointer-events must stay off or the scenery would swallow drags. */
+.tree-scenery {
   inset: 0;
+  overflow: hidden;
+  pointer-events: none;
   position: absolute;
+  z-index: -1;
 }
 
-.tree-edges path {
-  fill: none;
-  stroke: var(--line);
-  stroke-width: 1.5;
+/* Bottom-anchored bands, widened past the container so the ends stay off-screen while
+   panning. Height is fixed: the tile is in pixel units, so the silhouette must not stretch. */
+.tree-layer {
+  bottom: -24px;
+  height: 240px;
+  left: -30%;
+  position: absolute;
+  right: -30%;
+  transform: translate(var(--px, 0), var(--py, 0));
+  will-change: transform;
 }
 
-.tree-edges path[data-implicit] {
-  stroke-dasharray: 5 5;
+.tree-layer-far {
+  color: #dbe8dd;
 }
 
-.tree-node {
-  align-items: flex-start;
-  background: #fff;
-  border: 1.5px solid var(--line);
-  border-radius: 10px;
+.tree-layer-mid {
+  color: #bcd4c0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tree-layer {
+    transform: none;
+  }
+}
+
+/* Edges anchor to handles even read-only, so they exist but stay invisible until the
+   admin editor turns them into drag targets. */
+.tree-handle {
+  opacity: 0;
+}
+
+.skill-node {
+  align-items: center;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  justify-content: center;
+  gap: 0.45rem;
+  height: 142px;
+  width: 184px;
+}
+
+/* Rounded card under the emblem. Fixed height with a clamped description: layout() puts
+   every node on a uniform grid, so a taller card would overlap its neighbours. */
+.skill-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-height: 0;
   overflow: hidden;
-  padding: 0.5rem 0.65rem;
-  position: absolute;
+  padding: 0.35rem 0.5rem;
+  text-align: center;
+  width: 100%;
 }
 
-.tree-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.25;
+.skill-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-.tree-meta {
+.skill-desc {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
   color: var(--muted);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  display: -webkit-box;
+  font-size: 0.66rem;
+  line-height: 1.3;
+  overflow: hidden;
 }
 
-.tree-node[data-status='completed'] {
-  background: #e7f6ec;
+.skill-node[data-status='locked'] .skill-card {
+  background: var(--surface);
+}
+
+.skill-node[data-status='locked'] .skill-name,
+.skill-node[data-status='locked'] .skill-desc {
+  opacity: 0.75;
+}
+
+.skill-emblem {
+  align-items: center;
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  color: var(--muted);
+  display: flex;
+  height: 62px;
+  justify-content: center;
+  position: relative;
+  width: 62px;
+}
+
+.skill-glyph {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.skill-emblem[data-status='completed'] {
   border-color: var(--green);
-}
-
-.tree-node[data-status='completed'] .tree-meta {
   color: var(--green);
 }
 
-.tree-node[data-status='pending'] {
-  background: #fdf1e0;
+.skill-emblem[data-status='pending'] {
   border-color: var(--amber);
-}
-
-.tree-node[data-status='pending'] .tree-meta {
   color: var(--amber);
 }
 
-.tree-node[data-status='rejected'] {
-  background: #fdeaea;
+.skill-emblem[data-status='rejected'] {
   border-color: var(--red);
-}
-
-.tree-node[data-status='rejected'] .tree-meta {
   color: var(--red);
 }
 
-.tree-node[data-status='available'],
-.tree-node[data-status='started'] {
+.skill-emblem[data-status='available'],
+.skill-emblem[data-status='started'] {
   border-color: var(--blue);
-}
-
-.tree-node[data-status='available'] .tree-meta,
-.tree-node[data-status='started'] .tree-meta {
   color: var(--blue);
 }
 
-.tree-node[data-status='locked'] {
+/* Locked reads as mystery: the emblem is desaturated and softened, but the title below
+   stays sharp so the skill is still identifiable. */
+.skill-emblem[data-status='locked'] {
   background: var(--surface);
   border-style: dashed;
+}
+
+.skill-emblem[data-status='locked'] .skill-glyph {
+  filter: grayscale(1) blur(1.6px);
+  opacity: 0.6;
+}
+
+/* Status pip, bottom-right of the emblem. Shape carries the meaning for locked and
+   completed; colour alone only distinguishes which path is in progress. */
+.skill-pip {
+  align-items: center;
+  background: #fff;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  bottom: -3px;
+  color: #fff;
+  display: flex;
+  height: 22px;
+  justify-content: center;
+  position: absolute;
+  right: -3px;
+  width: 22px;
+}
+
+.skill-pip svg {
+  height: 13px;
+  width: 13px;
+}
+
+.skill-pip[data-pip='locked'] {
+  background: #868c96;
+}
+
+.skill-pip[data-pip='completed'] {
+  background: var(--green);
+}
+
+.skill-pip[data-pip='blue'] {
+  background: var(--blue);
+}
+
+.skill-pip[data-pip='amber'] {
+  background: var(--amber);
+}
+
+.skill-pip[data-pip='none'] {
+  border-color: var(--line);
 }

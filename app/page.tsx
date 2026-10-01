@@ -25,7 +25,7 @@ function TopBar({ name, role }: { name: string; role: string }) {
         </p>
       </div>
       <div className="row">
-        <a className="muted" href="/albero">
+        <a className="muted" href="/tree">
           Albero delle skill
         </a>
         <a className="muted" href="/api/dashboard">

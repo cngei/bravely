@@ -2,11 +2,19 @@ import { currentActor } from '@/lib/service';
 import { readState } from '@/lib/db';
 import { dashboard } from '@/lib/domain';
 import { AppError } from '@/lib/errors';
-import { NODE, layout } from '@/lib/tree';
+import { layout } from '@/lib/tree';
 import { STATUS_LABELS } from '../ui/labels';
+import { SkillGraph } from '../ui/skill-graph';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Albero delle skill · Bravely' };
+
+// The card clamps to three lines; this only stops a long description travelling to the client.
+const summarise = (text: string, limit = 180) => {
+  if (text.length <= limit) return text;
+  const cut = text.slice(0, limit);
+  return cut.slice(0, cut.lastIndexOf(' ') + 1 || limit).trimEnd() + '…';
+};
 
 export default async function TreePage({
   searchParams,
@@ -29,7 +37,13 @@ export default async function TreePage({
     // One tree per patrol: the DAG is shared, the progress on it is not.
     const requested = (await searchParams).patrol;
     const selected = data.patrols.find((p) => p.id === requested) ?? data.patrols[0];
+    const progress = new Map((selected?.skills ?? []).map((s) => [s.skillId, s]));
     const status = new Map((selected?.skills ?? []).map((s) => [s.skillId, s.status]));
+    // The pip shows which form colour the patrol actually chose, which lives on the evidence
+    // rather than on progress(). Keyed by target too, since a skill's target differs by scope.
+    const chosenPath = new Map(
+      data.evidence.filter((e) => e.color).map((e) => [`${e.skillId}:${e.targetId}`, e.color]),
+    );
     const titleOf = (id: string) => data.skills.find((k) => k.id === id)?.title ?? id;
 
     return (
@@ -49,7 +63,7 @@ export default async function TreePage({
                 key={patrol.id}
                 className="chip"
                 data-active={patrol.id === selected?.id || undefined}
-                href={`/albero?patrol=${encodeURIComponent(patrol.id)}`}
+                href={`/tree?patrol=${encodeURIComponent(patrol.id)}`}
               >
                 {patrol.name}
               </a>
@@ -63,41 +77,27 @@ export default async function TreePage({
           </p>
         ) : (
           <>
-            <div className="tree-scroll">
-              <div className="tree" style={{ width: tree.width, height: tree.height }}>
-                {/* Edges are decorative: the same relationships are in the list below. */}
-                <svg
-                  className="tree-edges"
-                  width={tree.width}
-                  height={tree.height}
-                  aria-hidden="true"
-                >
-                  {tree.edges.map((edge) => (
-                    <path key={edge.id} d={edge.path} data-implicit={edge.implicit || undefined} />
-                  ))}
-                </svg>
-                {tree.nodes.map((node) => {
-                  const state = status.get(node.skill.id);
-                  return (
-                    <article
-                      key={node.skill.id}
-                      className="tree-node"
-                      data-status={state}
-                      style={{ left: node.x, top: node.y, width: NODE.w, height: NODE.h }}
-                    >
-                      <span className="tree-title">{node.skill.title}</span>
-                      <span className="tree-meta">
-                        {state
-                          ? (STATUS_LABELS[state] ?? state)
-                          : node.skill.scope === 'troop'
-                            ? 'Reparto'
-                            : 'Pattuglia'}
-                      </span>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
+            {/* The graph is the visual layer; the <details> list below is the accessible one. */}
+            <SkillGraph
+              nodes={tree.nodes.map((node) => ({
+                id: node.skill.id,
+                title: node.skill.title,
+                // Capped here, not in CSS: descriptions may be 10000 characters and all of
+                // them would be serialised into the client payload for three visible lines.
+                description: summarise(node.skill.description),
+                scope: node.skill.scope,
+                status: status.get(node.skill.id),
+                color: chosenPath.get(`${node.skill.id}:${progress.get(node.skill.id)?.targetId}`),
+                x: node.x,
+                y: node.y,
+              }))}
+              edges={tree.edges.map((edge) => ({
+                id: edge.id,
+                source: edge.from,
+                target: edge.to,
+                implicit: edge.implicit,
+              }))}
+            />
 
             <p className="muted">
               Le linee tratteggiate sono il requisito implicito: ogni skill di pattuglia richiede
