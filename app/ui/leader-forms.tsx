@@ -19,6 +19,11 @@ export function CreatePatrolForm({ troopId }: { troopId: string }) {
         <input name="name" placeholder="Nome della pattuglia" maxLength={300} required />
         <SubmitButton>Crea pattuglia</SubmitButton>
       </div>
+      {state.ok && (
+        <p className="ok" role="status">
+          Pattuglia creata.
+        </p>
+      )}
       {state.error && <p className="error">{state.error}</p>}
     </form>
   );
@@ -58,6 +63,11 @@ export function AssignExplorerForm({
         </select>
         <SubmitButton>Assegna</SubmitButton>
       </div>
+      {state.ok && (
+        <p className="ok" role="status">
+          Esploratore assegnato.
+        </p>
+      )}
       {state.error && <p className="error">{state.error}</p>}
     </form>
   );

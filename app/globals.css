@@ -68,6 +68,13 @@ p {
   margin: 0.5rem 0 0;
 }
 
+.ok {
+  color: var(--green);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0.5rem 0 0;
+}
+
 .stack {
   display: grid;
   gap: 0.75rem;
@@ -270,6 +277,101 @@ dd {
    admin editor turns them into drag targets. */
 .tree-handle {
   opacity: 0;
+}
+
+/* Admin editor: canvas beside a panel, stacking on narrow screens. */
+.editor {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+}
+
+@media (max-width: 56rem) {
+  .editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.editor-panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  height: fit-content;
+  margin-top: 1.5rem;
+  padding: 1rem;
+}
+
+.editor-panel input[type='text'],
+.editor-panel input:not([type]),
+.editor-panel textarea {
+  width: 100%;
+}
+
+.editor-panel label.row {
+  align-items: center;
+  font-weight: 500;
+}
+
+.editor-panel input[type='checkbox'] {
+  width: auto;
+}
+
+.prereq-list {
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.prereq-list li {
+  align-items: center;
+  display: flex;
+  font-size: 0.875rem;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.prereq-list button {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.editor-node {
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.6rem;
+  width: 184px;
+}
+
+.editor-node[data-scope='troop'] {
+  background: #f4f1e8;
+  border-color: #c9b98f;
+}
+
+.editor-node[data-selected] {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px #e9eefb;
+}
+
+.editor-node-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.editor-node-id {
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.65rem;
+}
+
+.editor-node-tags {
+  color: var(--muted);
+  font-size: 0.65rem;
 }
 
 .skill-node {
