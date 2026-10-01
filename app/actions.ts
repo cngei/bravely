@@ -140,6 +140,20 @@ export async function removePrerequisiteAction(
   });
 }
 
+// Takes the whole forms array rather than a diff, which is exactly the shape saveSkill wants.
+// One command, so it either applies completely or not at all — no partial form edits.
+// commandSchema checks arity, lengths and strictness; execute() checks unique colours, unique
+// field ids and minFiles <= maxFiles. Nothing is re-validated here.
+export async function saveSkillFormsAction(
+  skillId: string,
+  forms: SkillForm[],
+): Promise<ActionResult> {
+  return runWith((state) => ({
+    type: 'saveSkill',
+    skill: { ...asPayload(requireSkill(state, skillId)), forms },
+  }));
+}
+
 export async function saveSkillMetaAction(
   skillId: string,
   _previous: ActionResult,

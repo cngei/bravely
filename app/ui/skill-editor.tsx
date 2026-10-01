@@ -188,6 +188,16 @@ export function SkillEditor({ skills, edges }: { skills: EditorSkill[]; edges: E
               {selected.scope === 'troop' ? 'skill iniziale di reparto' : 'skill di pattuglia'}
             </p>
 
+            {/* Stays an <a> because it navigates: middle-click and open-in-new-tab keep working.
+                Styled as a button, ghost so it does not compete with Salva. */}
+            <a
+              className="button-link"
+              data-variant="ghost"
+              href={`/admin/${encodeURIComponent(selected.id)}`}
+            >
+              Modifica i form →
+            </a>
+
             <Prerequisites
               skill={selected}
               skills={skills}

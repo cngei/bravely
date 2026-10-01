@@ -173,6 +173,26 @@ button[data-variant='danger'] {
   color: var(--red);
 }
 
+/* An anchor that looks like a button: used where the action is a navigation, so the element
+   stays a link and keeps middle-click and open-in-new-tab. */
+.button-link {
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 8px;
+  color: #fff;
+  display: inline-block;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  padding: 0.45rem 0.7rem;
+  text-decoration: none;
+}
+
+.button-link[data-variant='ghost'] {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
 label {
   display: block;
   font-size: 0.875rem;
@@ -313,6 +333,34 @@ dd {
 
 .editor-panel input[type='checkbox'] {
   width: auto;
+}
+
+/* Form builder: one block per question, with the colour of its form on the left edge. */
+.card[data-color='blue'] {
+  border-left: 4px solid var(--blue);
+}
+
+.card[data-color='amber'] {
+  border-left: 4px solid var(--amber);
+}
+
+.field-row {
+  background: var(--surface);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.field-grid {
+  display: grid;
+  gap: 0.5rem 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.field-grid input,
+.field-grid select {
+  width: 100%;
 }
 
 .prereq-list {
