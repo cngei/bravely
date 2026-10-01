@@ -96,8 +96,22 @@ p {
 .card-head {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   justify-content: space-between;
+}
+
+/* Review list: the unverified ones must stand out from the already-decided ones. */
+.card[data-status='pending'] {
+  border-left: 4px solid var(--amber);
+}
+
+.card[data-status='approved'] {
+  border-left: 4px solid var(--green);
+}
+
+.card[data-status='rejected'] {
+  border-left: 4px solid var(--red);
 }
 
 .badge {

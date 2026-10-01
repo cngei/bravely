@@ -2,44 +2,7 @@ import type { Evidence, Skill } from '@/lib/model';
 import { EvidenceForm } from './evidence-form';
 import { StartSkillForm } from './leader-forms';
 import { STATUS_LABELS } from './labels';
-
-const waiting = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  if (hours >= 24) return `da ${Math.floor(hours / 24)} g`;
-  return hours >= 1 ? `da ${hours} h` : `da ${Math.max(1, Math.floor(seconds / 60))} min`;
-};
-
-// Labels the stored answers with the form as it was when submitted, not as it reads today.
-function Answers({ evidence }: { evidence: Evidence }) {
-  const fields = evidence.formSnapshot?.fields ?? [];
-  if (!evidence.answers || !fields.length) return null;
-  return (
-    <dl>
-      {fields.map((entry) => {
-        const value = evidence.answers?.[entry.id];
-        if (value === undefined) return null;
-        return (
-          <div key={entry.id} style={{ display: 'contents' }}>
-            <dt>{entry.label}</dt>
-            <dd>
-              {Array.isArray(value) ? (
-                <span className="row">
-                  {value.map((id, index) => (
-                    <a key={id} href={`/api/files/${id}`}>
-                      Allegato {index + 1}
-                    </a>
-                  ))}
-                </span>
-              ) : (
-                value
-              )}
-            </dd>
-          </div>
-        );
-      })}
-    </dl>
-  );
-}
+import { Answers, waiting } from './evidence-view';
 
 export function SkillCard({
   skill,

@@ -4,6 +4,8 @@ import { dashboard } from '@/lib/domain';
 import { AppError } from '@/lib/errors';
 import { SkillCard } from './ui/skill-card';
 import { AssignExplorerForm, CreatePatrolForm, ReviewForm } from './ui/leader-forms';
+import { Answers, EvidenceTimes } from './ui/evidence-view';
+import { STATUS_LABELS } from './ui/labels';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,7 +97,17 @@ function LeaderView({ data }: { data: Dashboard }) {
   const titleOf = (id: string) => data.skills.find((k) => k.id === id)?.title ?? id;
   const evidenceFor = (skillId: string, targetId: string) =>
     data.evidence.find((e) => e.skillId === skillId && e.targetId === targetId);
-  const pending = data.evidence.filter((e) => e.status === 'pending');
+  // The spec asks for every uploaded proof with its state, not just the queue. `started` is
+  // excluded: work has begun but nothing has been submitted, so there is nothing to review.
+  // Pending first, then rejected, then approved; within a group the longest wait comes first.
+  const rank = (status: string) => (status === 'pending' ? 0 : status === 'rejected' ? 1 : 2);
+  const reviewable = data.evidence
+    .filter((e) => e.status !== 'started')
+    .sort(
+      (a, b) =>
+        rank(a.status) - rank(b.status) || (b.waitingSeconds ?? 0) - (a.waitingSeconds ?? 0),
+    );
+  const pending = reviewable.filter((e) => e.status === 'pending');
   const nameOf = (targetId: string, targetType: string) =>
     targetType === 'troop'
       ? (data.troops.find((t) => t.id === targetId)?.name ?? targetId)
@@ -103,20 +115,37 @@ function LeaderView({ data }: { data: Dashboard }) {
 
   return (
     <>
-      <h2>Da verificare · {pending.length}</h2>
-      {pending.length === 0 && <p className="muted">Nessuna prova in attesa.</p>}
+      <h2>
+        Prove · {pending.length} da verificare su {reviewable.length}
+      </h2>
+      {reviewable.length === 0 && <p className="muted">Nessuna prova inviata.</p>}
       <div className="stack">
-        {pending.map((evidence) => (
-          <article key={evidence.id} className="card">
+        {reviewable.map((evidence) => (
+          <article key={evidence.id} className="card" data-status={evidence.status}>
             <div className="card-head">
               <h3>
                 {titleOf(evidence.skillId)} · {nameOf(evidence.targetId, evidence.targetType)}
               </h3>
-              <span className="badge" data-status="pending">
-                {evidence.color === 'amber' ? 'Ambra' : 'Blu'}
+              <span className="row">
+                <span className="badge">{evidence.color === 'amber' ? 'Ambra' : 'Blu'}</span>
+                <span className="badge" data-status={evidence.status}>
+                  {STATUS_LABELS[evidence.status] ?? evidence.status}
+                </span>
               </span>
             </div>
-            <ReviewForm evidenceId={evidence.id} />
+
+            <EvidenceTimes evidence={evidence} />
+            <Answers evidence={evidence} />
+
+            {evidence.status === 'rejected' && evidence.reason && (
+              <p className="error">Motivazione del rigetto: {evidence.reason}</p>
+            )}
+
+            {/* Approved evidence stays actionable: the domain allows revoking it with a reason,
+                and the spec asks for exactly that. Rejected evidence has no legal transition
+                until the patrol resubmits. */}
+            {evidence.status === 'pending' && <ReviewForm evidenceId={evidence.id} />}
+            {evidence.status === 'approved' && <ReviewForm evidenceId={evidence.id} onlyReject />}
           </article>
         ))}
       </div>
