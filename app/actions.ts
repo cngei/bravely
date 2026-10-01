@@ -10,7 +10,7 @@ import { mutate } from '@/lib/db';
 import { execute } from '@/lib/domain';
 import { commandSchema } from '@/lib/commands';
 import { AppError } from '@/lib/errors';
-import type { Skill, SkillForm, State } from '@/lib/model';
+import type { Achievement, Skill, SkillForm, State } from '@/lib/model';
 
 // `ok` exists so a form can tell a successful save from its own initial state: useActionState
 // starts at {}, and without the flag "saved" and "never submitted" look identical.
@@ -168,6 +168,12 @@ export async function saveSkillMetaAction(
       public: data.get('public') !== null,
     },
   }));
+}
+
+// saveAchievements replaces the entire array, so the caller must always send the complete
+// list: anything omitted is deleted. That is also the only deletion this domain supports.
+export async function saveAchievementsAction(achievements: Achievement[]): Promise<ActionResult> {
+  return run({ type: 'saveAchievements', achievements });
 }
 
 // Ids are referenced by other skills' prerequisites, so they are slugs rather than uuids:

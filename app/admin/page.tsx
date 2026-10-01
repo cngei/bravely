@@ -3,6 +3,7 @@ import { readState } from '@/lib/db';
 import { AppError } from '@/lib/errors';
 import { layout } from '@/lib/tree';
 import { SkillEditor } from '../ui/skill-editor';
+import { AchievementsEditor } from '../ui/achievements-editor';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Amministrazione · Bravely' };
@@ -49,6 +50,9 @@ export default async function AdminPage() {
             implicit: edge.implicit,
           }))}
         />
+
+        <h2>Achievement</h2>
+        <AchievementsEditor initial={state.achievements} skillCount={state.skills.length} />
       </main>
     );
   } catch (error) {
