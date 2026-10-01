@@ -252,6 +252,36 @@ dd {
   margin: 0;
 }
 
+/* Roster table. Scroll container because three columns with a select inside the last one do not
+   fit a 390px viewport, and squeezing them would be worse than scrolling. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+table.data {
+  border-collapse: collapse;
+  min-width: 32rem;
+  width: 100%;
+}
+
+table.data th,
+table.data td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.6rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+table.data th {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+table.data tr:last-child td {
+  border-bottom: none;
+}
+
 .chip {
   border: 1px solid var(--line);
   border-radius: 999px;

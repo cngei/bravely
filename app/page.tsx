@@ -3,7 +3,8 @@ import { readState } from '@/lib/db';
 import { dashboard } from '@/lib/domain';
 import { AppError } from '@/lib/errors';
 import { SkillCard } from './ui/skill-card';
-import { AssignExplorerForm, CreatePatrolForm, ReviewForm } from './ui/leader-forms';
+import { CreatePatrolForm, ReviewForm } from './ui/leader-forms';
+import { ExplorerTable } from './ui/explorer-table';
 import { Answers, EvidenceTimes } from './ui/evidence-view';
 import { STATUS_LABELS } from './ui/labels';
 
@@ -220,12 +221,12 @@ function LeaderView({ data }: { data: Dashboard }) {
             </div>
 
             <h3 style={{ marginTop: '2rem' }}>Gestione</h3>
-            <div className="stack">
-              <CreatePatrolForm troopId={troop.id} />
-              {patrols.length > 0 && people.length > 0 && (
-                <AssignExplorerForm people={people} patrols={patrols} />
-              )}
-            </div>
+            <CreatePatrolForm troopId={troop.id} />
+
+            <h3 style={{ marginTop: '2rem' }}>Esploratori del reparto · {people.length}</h3>
+            {/* Always rendered: the roster is how a leader starts, so it must not depend on a
+                patrol already existing. */}
+            <ExplorerTable people={people} patrols={patrols} />
           </section>
         );
       })}

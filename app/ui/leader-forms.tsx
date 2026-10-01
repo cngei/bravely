@@ -1,7 +1,6 @@
 'use client';
 import { useActionState } from 'react';
 import {
-  assignExplorerAction,
   createPatrolAction,
   reviewEvidenceAction,
   startSkillAction,
@@ -22,50 +21,6 @@ export function CreatePatrolForm({ troopId }: { troopId: string }) {
       {state.ok && (
         <p className="ok" role="status">
           Pattuglia creata.
-        </p>
-      )}
-      {state.error && <p className="error">{state.error}</p>}
-    </form>
-  );
-}
-
-export function AssignExplorerForm({
-  people,
-  patrols,
-}: {
-  people: { id: string; name: string; patrolId?: string }[];
-  patrols: { id: string; name: string }[];
-}) {
-  const [state, action] = useActionState(assignExplorerAction, idle);
-  return (
-    <form action={action}>
-      <div className="row">
-        <select name="personId" defaultValue="" required>
-          <option value="" disabled>
-            Esploratore…
-          </option>
-          {people.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.name}
-              {person.patrolId ? '' : ' (senza pattuglia)'}
-            </option>
-          ))}
-        </select>
-        <select name="patrolId" defaultValue="" required>
-          <option value="" disabled>
-            Pattuglia…
-          </option>
-          {patrols.map((patrol) => (
-            <option key={patrol.id} value={patrol.id}>
-              {patrol.name}
-            </option>
-          ))}
-        </select>
-        <SubmitButton>Assegna</SubmitButton>
-      </div>
-      {state.ok && (
-        <p className="ok" role="status">
-          Esploratore assegnato.
         </p>
       )}
       {state.error && <p className="error">{state.error}</p>}
