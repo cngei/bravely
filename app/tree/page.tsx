@@ -6,6 +6,7 @@ import { layout } from '@/lib/tree';
 import { STATUS_LABELS } from '../ui/labels';
 import { SkillGraph } from '../ui/skill-graph';
 import { Banner } from '../ui/banner';
+import { QuestMeter } from '../ui/quest-meter';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Albero delle skill · Bravely' };
@@ -52,11 +53,19 @@ export default async function TreePage({
       <main>
         <Header
           subtitle={
-            selected
-              ? `${selected.name} · ${selected.completed} di ${data.skills.length} conseguite`
-              : 'Struttura del percorso — nessuna pattuglia da seguire'
+            selected ? selected.name : 'Struttura del percorso — nessuna pattuglia da seguire'
           }
         />
+
+        {/* The count the subtitle used to carry, as a bar: this is the one screen where progress
+            along the whole catalogue is the subject rather than an aside. */}
+        {selected && (
+          <QuestMeter
+            label="Cammino della pattuglia"
+            value={selected.completed}
+            total={data.skills.length}
+          />
+        )}
 
         {data.patrols.length > 1 && (
           <div className="row" style={{ marginTop: '1rem' }}>

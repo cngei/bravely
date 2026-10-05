@@ -1,36 +1,68 @@
-/* Bravely — visual system.
-   Built around the association green #2c6a46. Blue and amber are the two form paths, so they must
-   be distinguishable from each other, from the green, and from the rejection red, while staying
-   legible as text on white. Each hue has a dark token used for text, borders and filled chips, and
-   a soft tint used for surfaces — two per hue is enough and keeps the palette from sprawling.
+/* Bravely — visual system: an illuminated field journal.
+   The whole app is one aged-parchment document. Three substrates do the work: the page is
+   `--parchment`, raised panels are the lighter `--vellum`, and anything recessed (table heads,
+   field groups, meter troughs) is the darker `--parchment-deep`. Light therefore comes from the
+   top-left everywhere, and a card never needs a drop shadow to read as a card.
+
+   The association green survives as the ink of authority — buttons, links, the banner. Blue and
+   amber are still the two form paths, so they must be distinguishable from each other, from the
+   green, and from the rejection red, while staying legible on cream. Each hue keeps a dark token
+   for text, borders and filled chips, and a soft tint for surfaces; the tints are pushed off the
+   warm cream of the page so a tinted card is visibly stamped rather than merely a shade of paper.
+   Gold is ornament only and never carries meaning — nothing is distinguished by gold alone.
 
    Everything is rounded: no explicit corners anywhere. Buttons and chips are pills, containers use
-   the radius scale below.
+   the radius scale below. Ornament is drawn with gradients, hairline rules and four inline SVGs
+   held in custom properties — no image files, no icon font, nothing to 404.
 
-   The audience is 12–16 year olds on phones, so: generous touch targets, 16px inputs (anything
-   smaller makes iOS Safari zoom on focus), and the roster tables collapse into cards on narrow
-   screens rather than scrolling sideways. */
+   The audience is 12–16 year olds on phones, so: generous touch targets, 17px body text (anything
+   under 16px makes iOS Safari zoom on focus, and a Garamond needs the extra point for its small
+   x-height), and the roster tables collapse into cards on narrow screens rather than scrolling
+   sideways. */
 
 :root {
-  --green: #2c6a46;
-  --green-soft: #e3efe7;
-  --blue: #15607f;
-  --blue-soft: #e4eff4;
-  --amber: #9c5a06;
-  --amber-soft: #fbefdc;
-  --red: #9f2d20;
-  --red-soft: #fbeae6;
+  --green: #28583a;
+  --green-ink: #1d4129;
+  --green-soft: #dde7d1;
+  --blue: #1b556f;
+  --blue-soft: #d8e5ea;
+  --amber: #8c5207;
+  --amber-soft: #f2dfb3;
+  --red: #8e2219;
+  --red-soft: #f0d8cd;
+  --wax: #a62b20;
 
-  --ink: #1a211d;
-  --muted: #5e6a63;
-  --line: #dde4df;
-  --surface: #f4f7f5;
-  --page: #fbfcfb;
+  --ink: #382a1c;
+  --muted: #6b5942;
+  --line: #c6ad84;
+  --line-soft: #ddcfae;
+  --gold: #b8912f;
+  --gold-light: #e3c56b;
+
+  --vellum: #faf4e3;
+  --surface: #e9dcbd;
+  --parchment-deep: #e2d3b0;
+  --page: #f0e5cc;
 
   --r-sm: 12px;
   --r: 18px;
   --r-lg: 26px;
   --pill: 999px;
+
+  --display: var(--font-display, Cinzel), 'Trajan Pro', 'Palatino Linotype', Palatino, serif;
+  --body:
+    var(--font-body, 'EB Garamond'), 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia,
+    serif;
+
+  /* Paper grain: one tile of greyscale fractal noise, multiplied over the page so it darkens the
+     cream instead of fogging it. stitchTiles keeps the repeat seamless. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.3'/%3E%3C/svg%3E");
+  /* Gold lozenge, repeated at the four corners of every framed panel. */
+  --corner: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9'%3E%3Cpath d='M4.5 0 9 4.5 4.5 9 0 4.5Z' fill='%23b8912f'/%3E%3C/svg%3E");
+  /* Wax seal, used as a watermark on approved documents — never as the only sign of approval. */
+  --seal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='47' fill='%23a62b20'/%3E%3Ccircle cx='50' cy='50' r='37' fill='none' stroke='%23f0e5cc' stroke-width='3' stroke-dasharray='6 5'/%3E%3Cpath d='M50 24 57 43 77 43 61 55 67 74 50 62 33 74 39 55 23 43 43 43Z' fill='%23f0e5cc'/%3E%3C/svg%3E");
+  /* Compass rose, pinned to the corner of the skill map. */
+  --compass: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23382a1c' stroke-width='1.6' opacity='0.45'%3E%3Ccircle cx='50' cy='50' r='40'/%3E%3Ccircle cx='50' cy='50' r='31'/%3E%3C/g%3E%3Cg fill='%23382a1c'%3E%3Cpath d='M50 6 57 50 50 94 43 50Z' opacity='0.5'/%3E%3Cpath d='M6 50 50 43 94 50 50 57Z' opacity='0.3'/%3E%3C/g%3E%3C/svg%3E");
 
   color-scheme: light;
 }
@@ -40,11 +72,18 @@
 }
 
 body {
-  background: var(--page);
+  background-color: var(--page);
+  /* Grain, then laid-paper fibres, then a vignette that drops the edges of the sheet into shadow.
+     All three are background layers rather than overlay elements, so nothing can get between the
+     page and its content or pick up a stacking context. */
+  background-image:
+    var(--grain), repeating-linear-gradient(94deg, transparent 0 6px, rgb(56 42 28 / 2.5%) 6px 7px),
+    radial-gradient(135% 115% at 50% 0%, transparent 52%, rgb(56 42 28 / 10%) 100%);
+  background-blend-mode: multiply, multiply, normal;
   color: var(--ink);
-  font:
-    16px/1.55 system-ui,
-    sans-serif;
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.6;
   margin: 0;
   -webkit-text-size-adjust: 100%;
 }
@@ -55,24 +94,62 @@ main {
   padding: 1.5rem 1.15rem 5rem;
 }
 
+/* Headings are inscriptional: Cinzel's lowercase are small caps, so a sentence-case title comes
+   out carved. The trailing double rule turns every section into a chapter heading. */
+h1,
+h2,
+h3,
+h4,
+legend,
+.banner-name,
+.badge,
+.ribbon,
+.chip,
+button,
+.button-link,
+th,
+.meter-label {
+  font-family: var(--display);
+}
+
 h1 {
-  font-size: 1.45rem;
-  letter-spacing: -0.015em;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.015em;
   margin: 0;
 }
 
 h2 {
+  align-items: center;
+  display: flex;
   font-size: 1.1rem;
-  letter-spacing: -0.01em;
-  margin: 2.25rem 0 0.75rem;
+  font-weight: 700;
+  gap: 0.7rem;
+  letter-spacing: 0.04em;
+  margin: 2.25rem 0 0.8rem;
+}
+
+/* The rule is a single pseudo-element carrying two 1px background layers, so a heading costs one
+   extra box rather than a wrapper. flex:1 lets it run to the end of whatever space is left. */
+h2::after {
+  background:
+    linear-gradient(var(--line), var(--line)) 0 1px / 100% 1px no-repeat,
+    linear-gradient(var(--line-soft), var(--line-soft)) 0 4px / 100% 1px no-repeat;
+  content: '';
+  flex: 1;
+  height: 5px;
+  min-width: 1rem;
 }
 
 h3 {
-  font-size: 0.975rem;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
   margin: 0;
 }
 
 h4 {
+  letter-spacing: 0.035em;
   margin: 0;
 }
 
@@ -82,7 +159,13 @@ p {
 
 a {
   color: var(--green);
-  text-underline-offset: 0.15em;
+  text-decoration-color: rgb(184 145 47 / 70%);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+strong {
+  font-weight: 700;
 }
 
 /* ---------- banner ---------- */
@@ -90,38 +173,51 @@ a {
 .banner {
   align-items: center;
   background:
-    radial-gradient(120% 140% at 100% 0%, rgb(255 255 255 / 10%), transparent 60%),
-    linear-gradient(135deg, #2c6a46 0%, #1e4c33 100%);
+    radial-gradient(120% 160% at 100% 0%, rgb(255 255 255 / 9%), transparent 60%),
+    linear-gradient(160deg, #2d5d3c 0%, #1d4129 62%, #173322 100%);
+  border: 1px solid #13291b;
   border-radius: var(--r-lg);
-  color: #fff;
+  /* Gold hairline, dark gap, second fainter hairline: an illuminated border drawn entirely in
+     inset shadows, which cannot interfere with the flex layout the way nested boxes would. */
+  box-shadow:
+    inset 0 0 0 1px rgb(227 197 107 / 45%),
+    inset 0 0 0 4px rgb(19 41 27 / 85%),
+    inset 0 0 0 5px rgb(227 197 107 / 22%),
+    0 2px 0 rgb(56 42 28 / 10%);
+  color: #fdf8ea;
   display: flex;
   flex-wrap: wrap;
   gap: 0.85rem 1rem;
   justify-content: space-between;
-  padding: 1.1rem 1.25rem;
+  padding: 1.15rem 1.35rem;
 }
 
 .banner-identity {
   align-items: center;
   color: inherit;
   display: flex;
-  gap: 0.8rem;
+  gap: 0.85rem;
   text-decoration: none;
 }
 
 .banner-mark {
   align-items: center;
-  background: rgb(255 255 255 / 16%);
-  border: 1px solid rgb(255 255 255 / 28%);
+  background: radial-gradient(circle at 34% 28%, rgb(255 255 255 / 20%), rgb(255 255 255 / 6%));
+  border: 1px solid rgb(227 197 107 / 55%);
   border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 3px rgb(19 41 27 / 55%),
+    inset 0 0 0 4px rgb(227 197 107 / 35%);
+  color: var(--gold-light);
   display: flex;
   flex: none;
-  font-size: 1.3rem;
-  font-weight: 800;
-  height: 3rem;
+  font-family: var(--display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  height: 3.1rem;
   justify-content: center;
   overflow: hidden;
-  width: 3rem;
+  width: 3.1rem;
 }
 
 .banner-mark img {
@@ -132,42 +228,45 @@ a {
 
 .banner-name {
   display: block;
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.15;
 }
 
 .banner-event {
+  color: var(--gold-light);
   display: block;
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
-  opacity: 0.82;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  opacity: 0.9;
 }
 
-/* On green the controls invert: a white pill would shout louder than the name. */
+/* On the dark leather the controls invert: a parchment pill would shout louder than the name. */
 .banner .chip {
-  background: rgb(255 255 255 / 14%);
-  border-color: rgb(255 255 255 / 30%);
-  color: #fff;
+  background: rgb(253 248 234 / 10%);
+  border-color: rgb(227 197 107 / 38%);
+  box-shadow: none;
+  color: #fdf8ea;
 }
 
 .banner .chip[data-active] {
-  background: #fff;
-  border-color: #fff;
-  color: var(--green);
+  background: #fdf8ea;
+  border-color: var(--gold-light);
+  color: var(--green-ink);
 }
 
 .banner button,
 .banner button[data-variant='ghost'] {
   background: transparent;
-  border-color: rgb(255 255 255 / 35%);
-  color: #fff;
+  border-color: rgb(227 197 107 / 40%);
+  box-shadow: none;
+  color: #fdf8ea;
 }
 
 .banner a:focus-visible,
 .banner button:focus-visible {
-  outline-color: #fff;
+  outline-color: var(--gold-light);
 }
 
 .topbar {
@@ -176,24 +275,24 @@ a {
   flex-wrap: wrap;
   gap: 0.75rem 1rem;
   justify-content: space-between;
-  margin-top: 1.5rem;
+  margin-top: 1.6rem;
 }
 
 .muted {
   color: var(--muted);
-  font-size: 0.875rem;
+  font-size: 0.9rem;
 }
 
 .error {
   color: var(--red);
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   margin: 0.5rem 0 0;
 }
 
 .ok {
   color: var(--green);
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 600;
   margin: 0.5rem 0 0;
 }
 
@@ -214,11 +313,39 @@ a {
 
 /* ---------- surfaces ---------- */
 
+.card,
+.editor-panel,
+.tree-flow {
+  /* The shared frame: a hairline border, a parchment gap, then a second fainter rule inside it. */
+  box-shadow:
+    inset 0 0 0 1px rgb(250 244 227 / 90%),
+    inset 0 0 0 2px rgb(198 173 132 / 45%);
+  position: relative;
+}
+
+/* Four gold lozenges from one pseudo-element and one background-image repeated four times. */
+.card::before,
+.editor-panel::before {
+  background-image: var(--corner), var(--corner), var(--corner), var(--corner);
+  background-position:
+    left top,
+    right top,
+    left bottom,
+    right bottom;
+  background-repeat: no-repeat;
+  background-size: 7px 7px;
+  content: '';
+  inset: 5px;
+  opacity: 0.75;
+  pointer-events: none;
+  position: absolute;
+}
+
 .card {
-  background: #fff;
+  background-color: var(--vellum);
   border: 1px solid var(--line);
   border-radius: var(--r);
-  padding: 1.05rem 1.15rem;
+  padding: 1.1rem 1.25rem;
 }
 
 .card-head {
@@ -232,79 +359,168 @@ a {
 /* State is carried by a tinted surface rather than a hard edge: a 4px border is exactly the kind
    of explicit corner this design avoids. */
 .card[data-status='pending'] {
-  background: var(--amber-soft);
-  border-color: #eddcc0;
+  background-color: var(--amber-soft);
+  border-color: #d8ba80;
 }
 
+/* The seal is a watermark, not a badge: text flows over it, so it can never collide with the
+   layout the way an absolutely positioned stamp would. The status chip still says "Verificata". */
 .card[data-status='approved'] {
-  background: var(--green-soft);
-  border-color: #c9dfd1;
+  background-color: var(--green-soft);
+  background-image: var(--seal);
+  background-position: right 1rem bottom 0.9rem;
+  background-repeat: no-repeat;
+  background-size: 84px 84px;
+  background-blend-mode: multiply;
+  border-color: #aec49f;
 }
 
 .card[data-status='rejected'] {
-  background: var(--red-soft);
-  border-color: #f0cfc8;
+  background-color: var(--red-soft);
+  border-color: #dcb2a3;
 }
 
 .card[data-color='blue'] {
-  background: var(--blue-soft);
-  border-color: #cadde6;
+  background-color: var(--blue-soft);
+  border-color: #a9c4ce;
 }
 
 .card[data-color='amber'] {
-  background: var(--amber-soft);
-  border-color: #eddcc0;
+  background-color: var(--amber-soft);
+  border-color: #d8ba80;
 }
 
-/* ---------- chips and badges ---------- */
+/* ---------- progress ---------- */
+
+/* The quest meter: a recessed trough in the parchment with a filled bar of green ink. The label
+   above states the same numbers in words, so the bar is decoration over a readable fact. */
+.meter-block {
+  margin: 0.9rem 0 1.15rem;
+  max-width: 34rem;
+}
+
+.meter-label {
+  margin: 0;
+  align-items: baseline;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.8rem;
+  gap: 0.5rem;
+  justify-content: space-between;
+  letter-spacing: 0.08em;
+}
+
+.meter-label b {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.meter {
+  background: var(--parchment-deep);
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  box-shadow: inset 0 1px 3px rgb(56 42 28 / 20%);
+  height: 13px;
+  margin-top: 0.35rem;
+  overflow: hidden;
+}
+
+.meter > span {
+  background: linear-gradient(#3d7a4f, #27583a);
+  border-radius: var(--pill);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 28%);
+  display: block;
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meter > span {
+    transition: none;
+  }
+}
+
+/* ---------- chips, badges, ribbons ---------- */
 
 .badge {
-  background: var(--surface);
+  background: var(--parchment-deep);
+  border: 1px solid var(--line);
   border-radius: var(--pill);
   color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.015em;
-  padding: 0.28rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  padding: 0.3rem 0.75rem;
   white-space: nowrap;
 }
 
+/* Filled states read as enamel: a vertical gradient, a darker rim and a light top edge. */
 .badge[data-status='completed'] {
-  background: var(--green);
-  color: #fff;
+  background: linear-gradient(#2f6341, var(--green));
+  border-color: var(--green-ink);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%);
+  color: #fdf8ea;
 }
 
 .badge[data-status='pending'] {
-  background: var(--amber);
-  color: #fff;
+  background: linear-gradient(#a35f09, var(--amber));
+  border-color: #6f4105;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%);
+  color: #fdf8ea;
 }
 
 .badge[data-status='rejected'] {
-  background: var(--red);
-  color: #fff;
+  background: linear-gradient(#a32a1f, var(--red));
+  border-color: #6d1a13;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%);
+  color: #fdf8ea;
 }
 
 .badge[data-status='available'],
 .badge[data-status='started'] {
-  background: var(--blue);
-  color: #fff;
+  background: linear-gradient(#22637f, var(--blue));
+  border-color: #143f53;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%);
+  color: #fdf8ea;
+}
+
+/* Achievements are rank ribbons: chevroned at both ends, which no border can follow, so the shape
+   is a clip-path over a flat fill. Earned ribbons take the green; the rest stay unfilled paper. */
+.ribbon {
+  background: var(--parchment-deep);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 9px) 50%, 100% 100%, 0 100%, 9px 50%);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  padding: 0.42rem 1.25rem;
+  white-space: nowrap;
+}
+
+.ribbon[data-earned] {
+  background: linear-gradient(#2f6341, var(--green-ink));
+  color: var(--gold-light);
 }
 
 .chip {
-  background: #fff;
+  background: var(--vellum);
   border: 1px solid var(--line);
   border-radius: var(--pill);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 60%);
   color: var(--muted);
-  font-size: 0.875rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   min-height: 2.5rem;
-  padding: 0.55rem 1rem;
+  padding: 0.55rem 1.05rem;
   text-decoration: none;
 }
 
 .chip[data-active] {
-  background: var(--green);
-  border-color: var(--green);
-  color: #fff;
+  background: linear-gradient(#2f6341, var(--green));
+  border-color: var(--green-ink);
+  box-shadow: inset 0 0 0 1px rgb(227 197 107 / 30%);
+  color: #fdf8ea;
 }
 
 /* ---------- controls ---------- */
@@ -315,15 +531,19 @@ select,
 textarea {
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
-  /* 16px minimum: smaller text makes iOS Safari zoom the page on focus. */
-  font: inherit;
+  /* 17px minimum: smaller text makes iOS Safari zoom the page on focus. */
+  font-family: var(--body);
+  font-size: 17px;
   padding: 0.6rem 0.75rem;
 }
 
+/* Fields are cut into the parchment: lighter paper, an inner shadow from the top-left. */
 input,
 select,
 textarea {
-  background: #fff;
+  background: #fdfaf0;
+  box-shadow: inset 0 1px 3px rgb(56 42 28 / 14%);
+  color: var(--ink);
   max-width: 100%;
   /* Flex items default to min-width:auto, which for a form control resolves to its intrinsic
      width — so an input inside .row refuses to shrink and pushes the row past the viewport. */
@@ -332,72 +552,109 @@ textarea {
 
 /* Long ids and Keycloak subjects must break rather than widen the page. */
 code {
+  background: var(--parchment-deep);
+  border-radius: 5px;
+  font-size: 0.9em;
   overflow-wrap: anywhere;
+  padding: 0.1em 0.35em;
 }
 
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 button:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--green);
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 
 textarea {
   border-radius: var(--r);
+  line-height: 1.5;
   resize: vertical;
   width: 100%;
 }
 
+/* Buttons are cast metal plaques: Cinzel caps, a lit top edge, a gold hairline inside the rim. */
 button,
 .button-link {
-  background: var(--green);
-  border: 1px solid var(--green);
+  align-items: center;
+  background: linear-gradient(#306544, var(--green-ink));
+  border: 1px solid #16321f;
   border-radius: var(--pill);
-  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 22%),
+    inset 0 0 0 1px rgb(227 197 107 / 22%),
+    0 1px 2px rgb(56 42 28 / 22%);
+  color: #fdf8ea;
   cursor: pointer;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 700;
   gap: 0.4rem;
+  justify-content: center;
+  letter-spacing: 0.07em;
   /* 44px: the smallest comfortable touch target. */
   min-height: 2.75rem;
-  padding: 0.6rem 1.15rem;
+  padding: 0.6rem 1.25rem;
   text-decoration: none;
+}
+
+button:hover:not(:disabled),
+.button-link:hover {
+  background: linear-gradient(#3a7450, #22492f);
+}
+
+button:active:not(:disabled) {
+  box-shadow: inset 0 2px 4px rgb(19 41 27 / 45%);
 }
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 button[data-variant='ghost'],
 .button-link[data-variant='ghost'] {
-  background: #fff;
+  background: linear-gradient(#fdf9ee, var(--vellum));
   border-color: var(--line);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    0 1px 2px rgb(56 42 28 / 12%);
   color: var(--ink);
 }
 
+button[data-variant='ghost']:hover:not(:disabled),
+.button-link[data-variant='ghost']:hover {
+  background: linear-gradient(var(--vellum), #f3ebd6);
+}
+
 button[data-variant='danger'] {
-  background: #fff;
+  background: linear-gradient(#fdf9ee, var(--vellum));
   border-color: var(--red);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%);
   color: var(--red);
+}
+
+button[data-variant='danger']:hover:not(:disabled) {
+  background: linear-gradient(var(--red-soft), #e9cbbe);
 }
 
 input:disabled,
 select:disabled,
 textarea:disabled {
   background: var(--surface);
+  box-shadow: none;
   color: var(--muted);
   cursor: not-allowed;
 }
 
 label {
   display: block;
-  font-size: 0.875rem;
+  font-size: 0.88rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   margin-bottom: 0.3rem;
 }
 
@@ -409,6 +666,7 @@ label.row {
 input[type='checkbox'],
 input[type='radio'] {
   accent-color: var(--green);
+  box-shadow: none;
   height: 1.15rem;
   min-height: 0;
   padding: 0;
@@ -416,26 +674,45 @@ input[type='radio'] {
 }
 
 fieldset {
-  border: 1px solid var(--line);
+  background: rgb(226 211 176 / 32%);
+  border: 1px solid var(--line-soft);
   border-radius: var(--r);
   margin: 0.85rem 0 0;
   /* A fieldset carries an implicit min-inline-size: min-content, so without this it refuses to
      shrink and pushes every card that contains a form past the right edge. */
   min-width: 0;
-  padding: 0.9rem 1rem;
+  padding: 0.95rem 1.05rem;
 }
 
 /* File inputs have a wide intrinsic size (the button plus "nessun file selezionato") and would
    otherwise set the floor for the whole card. */
 input[type='file'] {
+  background: transparent;
+  box-shadow: none;
+  padding: 0.45rem 0.5rem;
   width: 100%;
+}
+
+input[type='file']::file-selector-button {
+  background: linear-gradient(#fdf9ee, var(--vellum));
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-right: 0.6rem;
+  padding: 0.4rem 0.9rem;
 }
 
 legend {
   color: var(--muted);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  padding: 0 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0 0.45rem;
 }
 
 dl {
@@ -447,11 +724,23 @@ dl {
 
 dt {
   color: var(--muted);
-  font-size: 0.875rem;
+  font-size: 0.88rem;
 }
 
 dd {
   margin: 0;
+}
+
+details {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 0.75rem;
+}
+
+summary {
+  cursor: pointer;
+  font-family: var(--display);
+  font-size: 0.82rem;
+  letter-spacing: 0.07em;
 }
 
 /* ---------- tables ---------- */
@@ -461,24 +750,36 @@ dd {
 }
 
 table.data {
+  background: var(--vellum);
+  border: 1px solid var(--line);
   border-collapse: separate;
+  border-radius: var(--r);
   border-spacing: 0;
   min-width: 30rem;
+  overflow: hidden;
   width: 100%;
 }
 
 table.data th,
 table.data td {
-  border-bottom: 1px solid var(--line);
-  padding: 0.7rem 0.6rem;
+  border-bottom: 1px solid var(--line-soft);
+  padding: 0.7rem 0.75rem;
   text-align: left;
   vertical-align: middle;
 }
 
 table.data th {
+  background: var(--parchment-deep);
+  border-bottom-color: var(--line);
   color: var(--muted);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+}
+
+/* Ruled ledger lines: every other row takes a faint wash so a long roster stays trackable. */
+table.data tbody tr:nth-child(even) td {
+  background: rgb(226 211 176 / 28%);
 }
 
 table.data tr:last-child td {
@@ -487,14 +788,45 @@ table.data tr:last-child td {
 
 /* ---------- skill tree ---------- */
 
+/* The map: older, more handled paper than the pages around it, with its own grain and a fold
+   shadow at the edges. */
 .tree-flow {
-  background: linear-gradient(#f2f7f9 0%, #edf4ee 60%, #e6f0e8 100%);
+  background-color: #e8dab8;
+  background-image:
+    var(--grain), radial-gradient(120% 100% at 50% 0%, rgb(250 244 227 / 55%), transparent 70%),
+    radial-gradient(130% 120% at 50% 50%, transparent 55%, rgb(56 42 28 / 16%) 100%);
+  background-blend-mode: multiply, normal, normal;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   height: 68vh;
   margin-top: 1.25rem;
   min-height: 380px;
   overflow: hidden;
+  /* Ink edges and controls, so React Flow's own blues never appear. */
+  --xy-edge-stroke-default: #8c7a5e;
+  --xy-edge-stroke-width-default: 1.6;
+  --xy-edge-stroke-selected-default: var(--green);
+  --xy-controls-button-background-color-default: #faf4e3;
+  --xy-controls-button-background-color-hover-default: #f0e5cc;
+  --xy-controls-button-color-default: #382a1c;
+  --xy-controls-button-color-hover-default: #28583a;
+  --xy-controls-button-border-color-default: #c6ad84;
+  --xy-controls-box-shadow-default: 0 2px 6px rgb(56 42 28 / 22%);
+}
+
+/* Compass rose, pinned to the container rather than the canvas: a compass that pans with the map
+   would be reading the paper instead of the world. Below the Controls' own z-index. */
+.tree-flow::after {
+  background: var(--compass) center / contain no-repeat;
+  bottom: 0.9rem;
+  content: '';
+  height: 74px;
+  opacity: 0.4;
+  pointer-events: none;
+  position: absolute;
+  right: 0.9rem;
+  width: 74px;
+  z-index: 4;
 }
 
 .tree-scenery {
@@ -507,7 +839,7 @@ table.data tr:last-child td {
 
 .tree-layer {
   bottom: -24px;
-  height: 240px;
+  height: 260px;
   left: -30%;
   position: absolute;
   right: -30%;
@@ -515,12 +847,18 @@ table.data tr:last-child td {
   will-change: transform;
 }
 
+/* Distance is drawn with ink density, the way a hand-tinted map fades: the far ridge is barely
+   there, the near treeline is almost solid. */
 .tree-layer-far {
-  color: #d6e6da;
+  color: #c9b99a;
 }
 
 .tree-layer-mid {
-  color: #b2cdb8;
+  color: #a69277;
+}
+
+.tree-layer-near {
+  color: #7d6a52;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -543,11 +881,14 @@ table.data tr:last-child td {
   width: 184px;
 }
 
+/* A nailed-on plaque: vellum, hairline rim, lit top edge. */
 .skill-card {
-  background: #fff;
+  background: linear-gradient(#fdf9ee, var(--vellum));
   border: 1px solid var(--line);
   border-radius: var(--r);
-  box-shadow: 0 1px 2px rgb(26 33 29 / 6%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    0 2px 3px rgb(56 42 28 / 16%);
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -560,8 +901,10 @@ table.data tr:last-child td {
 }
 
 .skill-name {
-  font-size: 0.78rem;
+  font-family: var(--display);
+  font-size: 0.76rem;
   font-weight: 700;
+  letter-spacing: 0.03em;
   line-height: 1.2;
 }
 
@@ -570,34 +913,51 @@ table.data tr:last-child td {
   -webkit-line-clamp: 3;
   color: var(--muted);
   display: -webkit-box;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   line-height: 1.3;
   overflow: hidden;
 }
 
+/* A struck medallion: domed vellum, a raised rim, and an engraved ring just outside it. */
 .skill-emblem {
   align-items: center;
-  background: #fff;
+  background: radial-gradient(circle at 34% 28%, #fffdf6, #ece0c4);
   border: 2px solid var(--line);
   border-radius: 50%;
-  box-shadow: 0 2px 6px rgb(26 33 29 / 8%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 80%),
+    inset 0 -2px 4px rgb(56 42 28 / 12%),
+    0 2px 5px rgb(56 42 28 / 20%);
   color: var(--muted);
   display: flex;
+  flex: none;
   height: 62px;
   justify-content: center;
   position: relative;
   width: 62px;
 }
 
+.skill-emblem::before {
+  border: 1px dashed currentColor;
+  border-radius: 50%;
+  content: '';
+  inset: -5px;
+  opacity: 0.45;
+  pointer-events: none;
+  position: absolute;
+}
+
 .skill-glyph {
+  font-family: var(--display);
   font-size: 1.05rem;
   font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .skill-emblem[data-status='completed'] {
-  background: var(--green-soft);
+  background: radial-gradient(circle at 34% 28%, #eef4e6, #cfdfc3);
   border-color: var(--green);
-  color: var(--green);
+  color: var(--green-ink);
 }
 
 .skill-emblem[data-status='pending'] {
@@ -619,8 +979,9 @@ table.data tr:last-child td {
 /* Locked reads as mystery: the emblem is desaturated and softened while the title below stays
    sharp, so the skill is still identifiable and consultable. */
 .skill-emblem[data-status='locked'] {
-  background: var(--surface);
+  background: linear-gradient(#e7dabc, var(--parchment-deep));
   border-style: dashed;
+  box-shadow: inset 0 1px 3px rgb(56 42 28 / 18%);
 }
 
 .skill-emblem[data-status='locked'] .skill-glyph {
@@ -629,7 +990,7 @@ table.data tr:last-child td {
 }
 
 .skill-node[data-status='locked'] .skill-card {
-  background: var(--surface);
+  background: linear-gradient(#ece0c4, var(--parchment-deep));
   box-shadow: none;
 }
 
@@ -642,11 +1003,11 @@ table.data tr:last-child td {
    path is in progress. */
 .skill-pip {
   align-items: center;
-  background: #fff;
-  border: 2px solid #fff;
+  background: var(--vellum);
+  border: 2px solid var(--vellum);
   border-radius: 50%;
   bottom: -3px;
-  color: #fff;
+  color: #fdf8ea;
   display: flex;
   height: 22px;
   justify-content: center;
@@ -661,11 +1022,15 @@ table.data tr:last-child td {
 }
 
 .skill-pip[data-pip='locked'] {
-  background: #7d8a83;
+  background: #7a6a52;
 }
 
+/* Completed is a blob of sealing wax: lit from the top-left, domed, slightly proud of the rim. */
 .skill-pip[data-pip='completed'] {
-  background: var(--green);
+  background: radial-gradient(circle at 34% 28%, #c4453a, var(--wax) 62%, #7d2019);
+  box-shadow:
+    inset 0 -1px 2px rgb(0 0 0 / 25%),
+    0 1px 2px rgb(56 42 28 / 35%);
 }
 
 .skill-pip[data-pip='blue'] {
@@ -683,10 +1048,17 @@ table.data tr:last-child td {
 /* ---------- skill sheet ---------- */
 
 dialog.sheet {
-  background: #fff;
-  border: none;
+  background-color: var(--page);
+  background-image: var(--grain);
+  background-blend-mode: multiply;
+  border: 1px solid var(--line);
+  border-bottom: none;
   border-radius: var(--r-lg) var(--r-lg) 0 0;
-  box-shadow: 0 -10px 36px rgb(26 33 29 / 20%);
+  box-shadow:
+    inset 0 0 0 1px rgb(250 244 227 / 80%),
+    inset 0 0 0 2px rgb(198 173 132 / 40%),
+    0 -12px 40px rgb(56 42 28 / 35%);
+  color: var(--ink);
   margin: auto auto 0;
   max-height: 88vh;
   max-width: none;
@@ -695,13 +1067,24 @@ dialog.sheet {
 }
 
 dialog.sheet::backdrop {
-  background: rgb(26 33 29 / 45%);
+  background: rgb(38 28 18 / 58%);
 }
 
 .sheet-body {
   max-height: 88vh;
   overflow-y: auto;
-  padding: 1.35rem 1.25rem 1.5rem;
+  padding: 1.5rem 1.3rem 1.5rem;
+}
+
+/* A gold lozenge where a scroll would be rolled: it also reads as the grabber of a bottom sheet. */
+.sheet-body::before {
+  background: var(--corner) center / contain no-repeat;
+  content: '';
+  display: block;
+  height: 8px;
+  margin: -0.55rem auto 0.8rem;
+  opacity: 0.8;
+  width: 8px;
 }
 
 .sheet-head {
@@ -715,7 +1098,7 @@ dialog.sheet::backdrop {
 }
 
 .sheet-head h2 {
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   margin-bottom: 0.4rem;
   margin-top: 0;
 }
@@ -735,8 +1118,12 @@ dialog.sheet::backdrop {
 
 @media (min-width: 40rem) {
   dialog.sheet {
+    border: 1px solid var(--line);
     border-radius: var(--r-lg);
-    box-shadow: 0 14px 44px rgb(26 33 29 / 24%);
+    box-shadow:
+      inset 0 0 0 1px rgb(250 244 227 / 80%),
+      inset 0 0 0 2px rgb(198 173 132 / 40%),
+      0 16px 48px rgb(56 42 28 / 40%);
     margin: auto;
     max-width: 34rem;
   }
@@ -751,12 +1138,12 @@ dialog.sheet::backdrop {
 }
 
 .editor-panel {
-  background: #fff;
+  background: var(--vellum);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   height: fit-content;
   margin-top: 1.25rem;
-  padding: 1.15rem;
+  padding: 1.25rem;
 }
 
 .editor-panel input,
@@ -771,9 +1158,12 @@ dialog.sheet::backdrop {
 }
 
 .editor-node {
-  background: #fff;
+  background: linear-gradient(#fdf9ee, var(--vellum));
   border: 1.5px solid var(--line);
   border-radius: var(--r);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    0 2px 3px rgb(56 42 28 / 14%);
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
@@ -782,18 +1172,22 @@ dialog.sheet::backdrop {
 }
 
 .editor-node[data-scope='troop'] {
-  background: var(--green-soft);
+  background: linear-gradient(#e9f0e0, var(--green-soft));
   border-color: var(--green);
 }
 
 .editor-node[data-selected] {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px var(--blue-soft);
+  border-color: var(--gold);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    0 0 0 3px rgb(184 145 47 / 30%);
 }
 
 .editor-node-title {
-  font-size: 0.8rem;
+  font-family: var(--display);
+  font-size: 0.78rem;
   font-weight: 700;
+  letter-spacing: 0.03em;
   line-height: 1.2;
 }
 
@@ -819,23 +1213,24 @@ dialog.sheet::backdrop {
 .prereq-list li {
   align-items: center;
   display: flex;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   gap: 0.5rem;
   justify-content: space-between;
 }
 
 .prereq-list button {
-  font-size: 0.8125rem;
+  font-size: 0.78rem;
   min-height: 2.25rem;
-  padding: 0.3rem 0.8rem;
+  padding: 0.3rem 0.85rem;
 }
 
 .field-row {
-  background: var(--surface);
+  background: rgb(226 211 176 / 45%);
+  border: 1px solid var(--line-soft);
   border-radius: var(--r);
   display: grid;
   gap: 0.6rem;
-  padding: 0.85rem 0.95rem;
+  padding: 0.9rem 1rem;
 }
 
 .field-grid {
@@ -860,8 +1255,16 @@ dialog.sheet::backdrop {
     margin-top: 1.85rem;
   }
 
+  .banner {
+    padding: 1rem 1.1rem;
+  }
+
+  .banner-name {
+    font-size: 1.3rem;
+  }
+
   /* Controls take the whole width and the row wraps, instead of being squeezed side by side and
-     overflowing. .row also holds chips and badges, which are <a>/<span> and stay inline. */
+     overflowing. .row also holds chips, badges and ribbons, which are <a>/<span> and stay inline. */
   .row > input:not([type='checkbox']):not([type='radio']),
   .row > select,
   .row > textarea,
@@ -894,6 +1297,18 @@ dialog.sheet::backdrop {
     height: 62vh;
   }
 
+  /* The compass competes with the Controls for the little width a phone has. */
+  .tree-flow::after {
+    height: 52px;
+    opacity: 0.3;
+    width: 52px;
+  }
+
+  /* The seal would sit under the body text rather than beside it. */
+  .card[data-status='approved'] {
+    background-size: 64px 64px;
+  }
+
   /* Tables become cards: three columns with a control in the last one cannot fit a phone, and
      sideways scrolling hides the thing the reader is looking for. */
   .table-scroll {
@@ -908,6 +1323,8 @@ dialog.sheet::backdrop {
   }
 
   table.data {
+    background: none;
+    border: none;
     min-width: 0;
   }
 
@@ -916,14 +1333,17 @@ dialog.sheet::backdrop {
   }
 
   table.data tr {
-    background: #fff;
+    background: var(--vellum);
     border: 1px solid var(--line);
     border-radius: var(--r);
+    box-shadow: inset 0 0 0 1px rgb(250 244 227 / 90%);
     margin-bottom: 0.75rem;
     padding: 0.9rem 1rem;
   }
 
+  table.data tbody tr:nth-child(even) td,
   table.data td {
+    background: none;
     border-bottom: none;
     padding: 0.2rem 0;
   }
@@ -932,8 +1352,10 @@ dialog.sheet::backdrop {
     color: var(--muted);
     content: attr(data-label);
     display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-family: var(--display);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
   }
 
   table.data td:last-child {

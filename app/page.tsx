@@ -7,6 +7,7 @@ import { CreatePatrolForm, ReviewForm } from './ui/leader-forms';
 import { ExplorerTable } from './ui/explorer-table';
 import { Answers, EvidenceTimes } from './ui/evidence-view';
 import { Banner } from './ui/banner';
+import { QuestMeter } from './ui/quest-meter';
 import { STATUS_LABELS } from './ui/labels';
 
 export const dynamic = 'force-dynamic';
@@ -51,15 +52,18 @@ function ExplorerView({ data }: { data: Dashboard }) {
   if (!patrol) return <p>Nessuna pattuglia da mostrare.</p>;
   return (
     <>
-      <h2>
-        {patrol.name} · {patrol.completed} skill conseguite
-      </h2>
+      <h2>{patrol.name}</h2>
+      <QuestMeter
+        label="Cammino della pattuglia"
+        value={patrol.completed}
+        total={patrol.skills.length}
+      />
       <div className="row">
         {patrol.achievements.map((achievement) => (
           <span
             key={achievement.id}
-            className="badge"
-            data-status={achievement.earned ? 'completed' : undefined}
+            className="ribbon"
+            data-earned={achievement.earned || undefined}
           >
             {achievement.title}
             {achievement.earned ? '' : ` · ne mancano ${achievement.remaining}`}
@@ -193,8 +197,13 @@ function LeaderView({ data }: { data: Dashboard }) {
                 <article key={patrol.id} className="card">
                   <div className="card-head">
                     <h3>{patrol.name}</h3>
-                    <span className="badge">{patrol.completed} conseguite</span>
                   </div>
+                  {/* The meter carries the count, so the badge that used to repeat it is gone. */}
+                  <QuestMeter
+                    label="Cammino"
+                    value={patrol.completed}
+                    total={patrol.skills.length}
+                  />
                   <div className="row" style={{ marginTop: '0.5rem' }}>
                     {patrol.skills
                       .filter((entry) => entry.status !== 'locked')
