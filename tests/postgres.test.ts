@@ -1,9 +1,9 @@
 import { beforeAll, afterAll, describe, it, expect, vi } from 'vitest';
 import pg from 'pg';
-import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { initialState, type Actor } from '../lib/model';
 import { execute } from '../lib/domain';
+import { migrate } from '../lib/migrate';
 // Explicit opt-in; every run uses and removes a unique isolated schema.
 const auth = vi.hoisted(() => ({
   actor: { id: 'a', name: 'Admin', role: 'admin', troopIds: [], explorerTroopIds: [] } as Actor,
@@ -31,9 +31,9 @@ suite('real PostgreSQL persistence and concurrency', () => {
     process.env.DATABASE_URL = connection.href;
     db = await import('../lib/db');
     routes = await import('../app/api/[...path]/route');
-    await db.pool.query(
-      await readFile(new URL('../migrations/001_initial.sql', import.meta.url), 'utf8'),
-    );
+    // Through the real runner, not a hardcoded filename: the harness used to read
+    // 001_initial.sql directly and would have silently ignored every later migration.
+    await migrate(db.pool);
     const s = initialState();
     s.troops = [{ id: 't', name: 'Test', source: 'external' }];
     await db.pool.query('INSERT INTO bravely_state VALUES(1,$1,0,now())', [JSON.stringify(s)]);
@@ -43,6 +43,36 @@ suite('real PostgreSQL persistence and concurrency', () => {
     if (control) {
       await control.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
       await control.end();
+    }
+  });
+  // In a schema of its own: this test tampers with the ledger on purpose, and doing that in the
+  // shared schema would break every test after it.
+  it('applies each migration once and refuses to run an edited one', async () => {
+    const scratch = `bravely_mig_${randomUUID().replaceAll('-', '')}`;
+    await control.query(`CREATE SCHEMA ${scratch}`);
+    const client = await control.connect();
+    try {
+      await client.query(`SET search_path = ${scratch}`);
+
+      const first = await migrate(client);
+      expect(first).toContain('001_initial.sql');
+      // Every file on disk is recorded, so a new migration cannot be quietly skipped.
+      const { rows } = await client.query('SELECT filename FROM schema_migrations');
+      expect(rows.map((r) => r.filename).sort()).toEqual([...first].sort());
+
+      // Second run is a no-op rather than a re-apply: this is what the old runner got wrong.
+      expect(await migrate(client)).toEqual([]);
+
+      await client.query('UPDATE schema_migrations SET checksum=$1 WHERE filename=$2', [
+        'tampered',
+        first[0],
+      ]);
+      await expect(migrate(client)).rejects.toThrow(/è cambiato/);
+    } finally {
+      // The client goes back to a shared pool, so it must not carry the scratch search_path.
+      await client.query('SET search_path = public');
+      client.release();
+      await control.query(`DROP SCHEMA IF EXISTS ${scratch} CASCADE`);
     }
   });
   it('serializes simultaneous duplicate patrol creation', async () => {
