@@ -27,6 +27,7 @@ import {
   saveSkillMetaAction,
   type ActionResult,
 } from '@/app/actions';
+import { ARROW } from './graph-style';
 
 export interface EditorSkill {
   id: string;
@@ -124,6 +125,9 @@ export function SkillEditor({ skills, edges }: { skills: EditorSkill[]; edges: E
         // Implicit edges are not stored anywhere, so they must not be deletable.
         deletable: !edge.implicit,
         style: edge.implicit ? { strokeDasharray: '5 5' } : undefined,
+        // The head matters most here: this is where prerequisites are drawn by dragging, and
+        // dragging the wrong way round builds the DAG backwards.
+        markerEnd: ARROW,
       })),
     [edges],
   );

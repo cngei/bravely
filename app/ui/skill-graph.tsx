@@ -15,6 +15,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { SkillForm } from '@/lib/model';
+import { ARROW } from './graph-style';
 import { STATUS_LABELS } from './labels';
 import { TreeScenery } from './tree-scenery';
 import { SkillSheet, type SheetSkill } from './skill-sheet';
@@ -185,8 +186,11 @@ export function SkillGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
         source: edge.source,
         target: edge.target,
         type: 'smoothstep',
-        // Dashed means the implicit initial-skill requirement from lib/domain.ts:62-63.
+        // Dashed means the implicit initial-skill requirement from lib/domain.ts:62-63. The head
+        // is the same on both: an implicit prerequisite points in the same direction as a
+        // declared one, and the dashes already say which kind it is.
         style: edge.implicit ? { strokeDasharray: '5 5' } : undefined,
+        markerEnd: ARROW,
       })),
     [edges],
   );

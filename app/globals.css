@@ -806,6 +806,10 @@ table.data tr:last-child td {
   --xy-edge-stroke-default: #8c7a5e;
   --xy-edge-stroke-width-default: 1.6;
   --xy-edge-stroke-selected-default: var(--green);
+  /* The line being dragged in the admin editor takes the action colour, so "I am drawing a
+     prerequisite" never looks like an edge that already exists. */
+  --xy-connectionline-stroke-default: var(--green);
+  --xy-connectionline-stroke-width-default: 2;
   --xy-controls-button-background-color-default: #faf4e3;
   --xy-controls-button-background-color-hover-default: #f0e5cc;
   --xy-controls-button-color-default: #382a1c;
