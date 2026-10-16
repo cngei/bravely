@@ -2,23 +2,14 @@ import { currentActor } from '@/lib/service';
 import { readState } from '@/lib/db';
 import { dashboard } from '@/lib/domain';
 import { AppError } from '@/lib/errors';
-import { layout } from '@/lib/tree';
-import { STATUS_LABELS } from '../ui/labels';
-import { SkillGraph } from '../ui/skill-graph';
 import { Banner } from '../ui/banner';
-import { QuestMeter } from '../ui/quest-meter';
+import { TreeScreen, selectPatrol } from '../ui/tree-screen';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Albero delle skill · Bravely' };
 
-// The card clamps to three lines and the sheet shows a preview; the full text lives on the
-// detail page. This only stops a 10000-character description travelling to the client.
-const summarise = (text: string, limit = 400) => {
-  if (text.length <= limit) return text;
-  const cut = text.slice(0, limit);
-  return cut.slice(0, cut.lastIndexOf(' ') + 1 || limit).trimEnd() + '…';
-};
-
+// The leaders' view of the tree. The screen itself lives in <TreeScreen>, because for an explorer
+// the same screen is the home page — see app/page.tsx.
 export default async function TreePage({
   searchParams,
 }: {
@@ -27,7 +18,6 @@ export default async function TreePage({
   try {
     const actor = await currentActor();
     const data = dashboard(await readState(), actor);
-    const tree = layout('skills' in data ? data.skills : []);
 
     if (!('patrols' in data))
       return (
@@ -37,17 +27,8 @@ export default async function TreePage({
         </main>
       );
 
-    // One tree per patrol: the DAG is shared, the progress on it is not.
     const requested = (await searchParams).patrol;
-    const selected = data.patrols.find((p) => p.id === requested) ?? data.patrols[0];
-    const progress = new Map((selected?.skills ?? []).map((s) => [s.skillId, s]));
-    const status = new Map((selected?.skills ?? []).map((s) => [s.skillId, s.status]));
-    // The pip shows which form colour the patrol actually chose, which lives on the evidence
-    // rather than on progress(). Keyed by target too, since a skill's target differs by scope.
-    const chosenPath = new Map(
-      data.evidence.filter((e) => e.color).map((e) => [`${e.skillId}:${e.targetId}`, e.color]),
-    );
-    const titleOf = (id: string) => data.skills.find((k) => k.id === id)?.title ?? id;
+    const selected = selectPatrol(data, requested);
 
     return (
       <main>
@@ -56,101 +37,22 @@ export default async function TreePage({
             selected ? selected.name : 'Struttura del percorso — nessuna pattuglia da seguire'
           }
         />
-
-        {/* The count the subtitle used to carry, as a bar: this is the one screen where progress
-            along the whole catalogue is the subject rather than an aside. */}
-        {selected && (
-          <QuestMeter
-            label="Cammino della pattuglia"
-            value={selected.completed}
-            total={data.skills.length}
-          />
-        )}
-
-        {data.patrols.length > 1 && (
-          <div className="row" style={{ marginTop: '1rem' }}>
-            {data.patrols.map((patrol) => (
-              <a
-                key={patrol.id}
-                className="chip"
-                data-active={patrol.id === selected?.id || undefined}
-                href={`/tree?patrol=${encodeURIComponent(patrol.id)}`}
-              >
-                {patrol.name}
-              </a>
-            ))}
-          </div>
-        )}
-
-        {tree.nodes.length === 0 ? (
-          <p className="muted" style={{ marginTop: '1.5rem' }}>
-            Nessuna skill in catalogo. Eseguire <code>npm run db:seed</code>.
-          </p>
-        ) : (
-          <>
-            {/* The graph is the visual layer; the <details> list below is the accessible one. */}
-            <SkillGraph
-              nodes={tree.nodes.map((node) => ({
-                id: node.skill.id,
-                title: node.skill.title,
-                // Capped here, not in CSS: descriptions may be 10000 characters and all of
-                // them would be serialised into the client payload for three visible lines.
-                description: summarise(node.skill.description),
-                scope: node.skill.scope,
-                missing: (progress.get(node.skill.id)?.missingPrerequisites ?? []).map(titleOf),
-                // What the proof asks for, without the field ids and editing machinery.
-                forms: node.skill.forms.map((form) => ({
-                  color: form.color,
-                  title: form.title,
-                  fields: form.fields.map((entry) => ({
-                    label: entry.label,
-                    type: entry.type,
-                    required: entry.required,
-                    min: entry.minFiles,
-                    max: entry.maxFiles,
-                  })),
-                })),
-                status: status.get(node.skill.id),
-                color: chosenPath.get(`${node.skill.id}:${progress.get(node.skill.id)?.targetId}`),
-                x: node.x,
-                y: node.y,
-              }))}
-              edges={tree.edges.map((edge) => ({
-                id: edge.id,
-                source: edge.from,
-                target: edge.to,
-                implicit: edge.implicit,
-              }))}
-            />
-
-            <p className="muted">
-              Le linee tratteggiate sono il requisito implicito: ogni skill di pattuglia richiede
-              entrambe le skill iniziali di reparto, anche senza indicarle. Le skill più in basso lo
-              ereditano dai propri prerequisiti.
-            </p>
-
-            <details style={{ marginTop: '1.5rem' }}>
-              <summary className="muted">Elenco testuale</summary>
-              <ul style={{ marginTop: '0.75rem' }}>
-                {tree.nodes.map((node) => {
-                  const state = status.get(node.skill.id);
-                  return (
-                    <li key={node.skill.id}>
-                      <strong>{node.skill.title}</strong>
-                      {state ? ` — ${STATUS_LABELS[state] ?? state}` : ''}
-                      {node.skill.prerequisites.length > 0 && (
-                        <span className="muted">
-                          {' '}
-                          · richiede {node.skill.prerequisites.map(titleOf).join(', ')}
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </details>
-          </>
-        )}
+        <TreeScreen data={data} role={actor.role} requestedPatrol={requested}>
+          {data.patrols.length > 1 && (
+            <div className="row" style={{ marginTop: '1rem' }}>
+              {data.patrols.map((patrol) => (
+                <a
+                  key={patrol.id}
+                  className="chip"
+                  data-active={patrol.id === selected?.id || undefined}
+                  href={`/tree?patrol=${encodeURIComponent(patrol.id)}`}
+                >
+                  {patrol.name}
+                </a>
+              ))}
+            </div>
+          )}
+        </TreeScreen>
       </main>
     );
   } catch (error) {

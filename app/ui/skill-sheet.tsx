@@ -1,19 +1,23 @@
 'use client';
-// Quick look at a skill, opened by tapping a node in the tree. Bottom sheet on phones, centred
-// dialog on wider screens — one native <dialog>, which brings focus trapping, Esc to dismiss and
-// a backdrop for free rather than reimplementing them.
+// A skill, opened by tapping a node in the tree — and, for an explorer, the place where a proof is
+// actually submitted. Bottom sheet on phones, centred dialog on wider screens: one native
+// <dialog>, which brings focus trapping, Esc to dismiss and a backdrop for free rather than
+// reimplementing them.
+//
+// The submission rules are deliberately the same three lines as SkillCard (interactive /
+// consultable / why) rather than a second interpretation of them: the specification requires every
+// skill's forms to be readable, including locked ones, with only the submission disabled
+// ("consultabili ma non conseguibili"), and two copies of that rule would drift.
 //
 // Everything shown here is already in the client payload, so the sheet opens instantly with no
 // spinner. Anything that needs a server read — who else earned the skill, other patrols'
-// documentation — lives behind the button at the bottom.
+// documentation, the answers already accepted — lives behind the link at the bottom.
 import { useEffect, useRef } from 'react';
+import type { SkillForm } from '@/lib/model';
+import { EvidenceForm } from './evidence-form';
+import { StartSkillForm } from './leader-forms';
 import { STATUS_LABELS } from './labels';
-
-export interface SheetForm {
-  color: 'blue' | 'amber';
-  title: string;
-  fields: { label: string; type: 'text' | 'file'; required: boolean; min?: number; max?: number }[];
-}
+import { waiting } from './evidence-view';
 
 export interface SheetSkill {
   id: string;
@@ -23,7 +27,13 @@ export interface SheetSkill {
   status?: string;
   color?: 'blue' | 'amber';
   missing: string[];
-  forms: SheetForm[];
+  forms: SkillForm[];
+  /** Absent when the viewer has no patrol context, e.g. a leader whose troop has no patrols yet. */
+  targetId?: string;
+  canSubmit: boolean;
+  hasEvidence: boolean;
+  reason?: string;
+  waitingSeconds?: number;
 }
 
 export function SkillSheet({ skill, onClose }: { skill: SheetSkill | null; onClose: () => void }) {
@@ -48,42 +58,83 @@ export function SkillSheet({ skill, onClose }: { skill: SheetSkill | null; onClo
         if (event.target === dialog.current) onClose();
       }}
     >
-      {skill && (
-        <div className="sheet-body">
-          <div className="sheet-head">
-            <span className="skill-emblem" data-status={skill.status}>
-              <span className="skill-glyph">{skill.glyph}</span>
+      {skill && <Body skill={skill} onClose={onClose} />}
+    </dialog>
+  );
+}
+
+function Body({ skill, onClose }: { skill: SheetSkill; onClose: () => void }) {
+  // Without a target there is nothing to submit against, so the forms can only be described.
+  const submittable = skill.canSubmit && skill.targetId !== undefined;
+  const interactive = submittable && skill.status !== 'completed' && skill.status !== 'locked';
+  const consultable = !interactive && skill.status !== 'completed';
+  const why =
+    skill.status === 'locked'
+      ? 'Completa prima i prerequisiti per poter inviare questa prova.'
+      : skill.canSubmit
+        ? undefined
+        : 'Questa prova è di competenza dei capi reparto: puoi consultarla ma non inviarla.';
+
+  return (
+    <div className="sheet-body">
+      <div className="sheet-head">
+        <span className="skill-emblem" data-status={skill.status}>
+          <span className="skill-glyph">{skill.glyph}</span>
+        </span>
+        <div>
+          <h2 style={{ margin: 0 }}>{skill.title}</h2>
+          {skill.status && (
+            <span className="badge" data-status={skill.status}>
+              {STATUS_LABELS[skill.status] ?? skill.status}
             </span>
-            <div>
-              <h2 style={{ margin: 0 }}>{skill.title}</h2>
-              {skill.status && (
-                <span className="badge" data-status={skill.status}>
-                  {STATUS_LABELS[skill.status] ?? skill.status}
-                </span>
-              )}
-            </div>
-            <button type="button" data-variant="ghost" onClick={onClose} aria-label="Chiudi">
-              ✕
-            </button>
-          </div>
-
-          {skill.description && <p>{skill.description}</p>}
-
-          {skill.status === 'locked' && skill.missing.length > 0 && (
-            <p className="muted">Prima servono: {skill.missing.join(', ')}.</p>
           )}
-          {skill.color && (
-            <p className="muted">
-              Percorso scelto: form {skill.color === 'amber' ? 'ambra' : 'blu'}.
-            </p>
-          )}
+        </div>
+        <button type="button" data-variant="ghost" onClick={onClose} aria-label="Chiudi">
+          ✕
+        </button>
+      </div>
 
-          <h3 style={{ marginTop: '1rem' }}>Prove richieste</h3>
-          <p className="muted">
-            {skill.forms.length > 1
-              ? 'Due modalità alternative: ne basta una.'
-              : 'Una sola modalità disponibile.'}
-          </p>
+      {skill.description && <p>{skill.description}</p>}
+
+      {skill.status === 'locked' && skill.missing.length > 0 && (
+        <p className="muted">Prima servono: {skill.missing.join(', ')}.</p>
+      )}
+      {skill.status === 'pending' && skill.waitingSeconds !== undefined && (
+        <p className="muted">In attesa di verifica {waiting(skill.waitingSeconds)}.</p>
+      )}
+      {skill.status === 'rejected' && skill.reason && (
+        <p className="error">Rigettata: {skill.reason}</p>
+      )}
+      {skill.color && (
+        <p className="muted">Percorso scelto: form {skill.color === 'amber' ? 'ambra' : 'blu'}.</p>
+      )}
+
+      {skill.status === 'completed' && (
+        <p className="muted">Prova verificata. Le risposte accettate sono nei dettagli completi.</p>
+      )}
+
+      {/* The real form, enabled or disabled. A disabled form already lists the questions, which
+          is why there is no separate "prove richieste" summary to keep in sync. */}
+      {skill.targetId !== undefined && (interactive || consultable) && (
+        <>
+          {skill.forms.length > 1 && <h3 style={{ marginTop: '1.1rem' }}>Scegli una modalità</h3>}
+          {interactive && !skill.hasEvidence && (
+            <StartSkillForm skillId={skill.id} targetId={skill.targetId} />
+          )}
+          <EvidenceForm
+            skillId={skill.id}
+            targetId={skill.targetId}
+            forms={skill.forms}
+            disabled={!interactive}
+            disabledReason={why}
+          />
+        </>
+      )}
+
+      {/* No patrol context: describe what the proof asks for, since it cannot be filled in here. */}
+      {skill.targetId === undefined && (
+        <>
+          <h3 style={{ marginTop: '1.1rem' }}>Prove richieste</h3>
           <div className="stack">
             {skill.forms.map((form) => (
               <section key={form.color} className="card" data-color={form.color}>
@@ -91,11 +142,11 @@ export function SkillSheet({ skill, onClose }: { skill: SheetSkill | null; onClo
                   {form.title} · {form.color === 'amber' ? 'Ambra' : 'Blu'}
                 </h4>
                 <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.1rem' }}>
-                  {form.fields.map((field, index) => (
-                    <li key={index} className="muted" style={{ fontSize: '0.875rem' }}>
+                  {form.fields.map((field) => (
+                    <li key={field.id} className="muted" style={{ fontSize: '0.875rem' }}>
                       {field.label}
                       {field.type === 'file'
-                        ? ` — da ${field.min ?? 1} a ${field.max ?? 10} file`
+                        ? ` — da ${field.minFiles ?? 1} a ${field.maxFiles ?? 10} file`
                         : ' — risposta scritta'}
                       {field.required ? '' : ' (facoltativa)'}
                     </li>
@@ -104,12 +155,12 @@ export function SkillSheet({ skill, onClose }: { skill: SheetSkill | null; onClo
               </section>
             ))}
           </div>
-
-          <a className="button-link sheet-cta" href={`/skills/${encodeURIComponent(skill.id)}`}>
-            Dettagli completi →
-          </a>
-        </div>
+        </>
       )}
-    </dialog>
+
+      <a className="button-link sheet-cta" href={`/skills/${encodeURIComponent(skill.id)}`}>
+        Dettagli completi →
+      </a>
+    </div>
   );
 }

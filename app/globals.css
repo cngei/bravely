@@ -1087,10 +1087,20 @@ dialog.sheet::backdrop {
   width: 8px;
 }
 
+/* The sheet hosts a whole submission form now, so it can be taller than the viewport: the title
+   and the close button stay pinned instead of scrolling away. The negative inline margin lets the
+   background span the full width of the sheet, covering the content passing underneath. */
 .sheet-head {
   align-items: flex-start;
+  background: var(--page);
+  box-shadow: 0 1px 0 var(--line-soft);
   display: flex;
   gap: 0.85rem;
+  margin: 0 -1.3rem;
+  padding: 0 1.3rem 0.7rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .sheet-head > div {

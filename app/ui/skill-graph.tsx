@@ -14,12 +14,13 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import type { SkillForm } from '@/lib/model';
 import { STATUS_LABELS } from './labels';
 import { TreeScenery } from './tree-scenery';
-import { SkillSheet, type SheetForm, type SheetSkill } from './skill-sheet';
+import { SkillSheet, type SheetSkill } from './skill-sheet';
 
-// Only what a node renders: the full Skill carries forms and descriptions that would be
-// serialised to the client for nothing.
+// Only what a node renders plus what its sheet needs to submit. The full Skill would drag in
+// nothing useful, and the full Evidence would ship history[] and other patrols' answers.
 export interface GraphNode {
   id: string;
   title: string;
@@ -31,8 +32,17 @@ export interface GraphNode {
   color?: 'blue' | 'amber';
   /** Titles, not ids: the sheet shows them to a human. */
   missing: string[];
-  /** Enough of each form to say what the proof asks for, without the editing machinery. */
-  forms: SheetForm[];
+  /** The real forms, field ids included: the sheet submits from them. */
+  forms: SkillForm[];
+  /** Which troop or patrol the proof is filed against; absent when there is no patrol context. */
+  targetId?: string;
+  /** Decided on the server: an explorer may not submit troop-scoped proofs. */
+  canSubmit: boolean;
+  hasEvidence: boolean;
+  /** Only for rejected evidence — the reason the patrol has to act on. */
+  reason?: string;
+  /** Only for pending evidence. */
+  waitingSeconds?: number;
   x: number;
   y: number;
 }
@@ -143,6 +153,11 @@ export function SkillGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
         color: open.color,
         missing: open.missing,
         forms: open.forms,
+        targetId: open.targetId,
+        canSubmit: open.canSubmit,
+        hasEvidence: open.hasEvidence,
+        reason: open.reason,
+        waitingSeconds: open.waitingSeconds,
       }
     : null;
 

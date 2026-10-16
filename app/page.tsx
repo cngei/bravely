@@ -8,11 +8,10 @@ import { ExplorerTable } from './ui/explorer-table';
 import { Answers, EvidenceTimes } from './ui/evidence-view';
 import { Banner } from './ui/banner';
 import { QuestMeter } from './ui/quest-meter';
+import { TreeScreen, type Dashboard } from './ui/tree-screen';
 import { STATUS_LABELS } from './ui/labels';
 
 export const dynamic = 'force-dynamic';
-
-type Dashboard = Extract<ReturnType<typeof dashboard>, { patrols: unknown }>;
 
 const ROLES: Record<string, string> = {
   admin: 'amministratore',
@@ -29,9 +28,12 @@ function TopBar({ name, role }: { name: string; role: string }) {
             Admin
           </a>
         )}
-        <a className="chip" href="/tree">
-          Albero
-        </a>
+        {/* No link to /tree for an explorer: this page already is the tree. */}
+        {role !== 'explorer' && (
+          <a className="chip" href="/tree">
+            Albero
+          </a>
+        )}
         <form action="/auth/logout" method="post">
           <button data-variant="ghost">Esci</button>
         </form>
@@ -41,56 +43,6 @@ function TopBar({ name, role }: { name: string; role: string }) {
           <h1>Ciao, {name.split(' ')[0]}</h1>
           <p className="muted">{ROLES[role] ?? role}</p>
         </div>
-      </div>
-    </>
-  );
-}
-
-function ExplorerView({ data }: { data: Dashboard }) {
-  const patrol = data.patrols[0];
-  const titleOf = (id: string) => data.skills.find((k) => k.id === id)?.title ?? id;
-  if (!patrol) return <p>Nessuna pattuglia da mostrare.</p>;
-  return (
-    <>
-      <h2>{patrol.name}</h2>
-      <QuestMeter
-        label="Cammino della pattuglia"
-        value={patrol.completed}
-        total={patrol.skills.length}
-      />
-      <div className="row">
-        {patrol.achievements.map((achievement) => (
-          <span
-            key={achievement.id}
-            className="ribbon"
-            data-earned={achievement.earned || undefined}
-          >
-            {achievement.title}
-            {achievement.earned ? '' : ` · ne mancano ${achievement.remaining}`}
-          </span>
-        ))}
-      </div>
-      <h2>Le tue skill</h2>
-      <div className="stack">
-        {patrol.skills.map((entry) => {
-          const skill = data.skills.find((k) => k.id === entry.skillId);
-          if (!skill) return null;
-          return (
-            <SkillCard
-              key={`${entry.skillId}-${entry.targetId}`}
-              skill={skill}
-              targetId={entry.targetId}
-              status={entry.status}
-              missing={entry.missingPrerequisites}
-              evidence={data.evidence.find(
-                (e) => e.skillId === entry.skillId && e.targetId === entry.targetId,
-              )}
-              // Troop-scoped skills belong to the leaders; an explorer only reads them.
-              canSubmit={skill.scope === 'patrol'}
-              titleOf={titleOf}
-            />
-          );
-        })}
       </div>
     </>
   );
@@ -251,7 +203,9 @@ export default async function Home() {
         {!('patrols' in data) ? (
           <p style={{ marginTop: '2rem' }}>{data.message}</p>
         ) : actor.role === 'explorer' ? (
-          <ExplorerView data={data} />
+          // Decided in the 16/10 meeting: the explorer's only screen is the tree, and proofs are
+          // submitted from the node's bottom sheet. The card list this replaced is gone.
+          <TreeScreen data={data} role={actor.role} />
         ) : (
           <LeaderView data={data} />
         )}
