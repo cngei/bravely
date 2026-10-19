@@ -13,6 +13,23 @@ import { STATUS_LABELS } from './ui/labels';
 
 export const dynamic = 'force-dynamic';
 
+// "3 verificate · 2 in verifica · 12 disponibili" — zeros omitted, so the line says only what is
+// true of this patrol instead of printing five counters every time.
+function tally(patrol: Dashboard['patrols'][number]) {
+  const count = (...statuses: string[]) =>
+    patrol.skills.filter((entry) => statuses.includes(entry.status)).length;
+  const parts: string[] = [];
+  const add = (n: number, label: string) => {
+    if (n > 0) parts.push(`${n} ${label}`);
+  };
+  add(count('completed'), 'verificate');
+  add(count('pending'), 'in verifica');
+  add(count('rejected'), 'rigettate');
+  add(count('available', 'started'), 'disponibili');
+  add(count('locked'), 'bloccate');
+  return parts.join(' · ');
+}
+
 const ROLES: Record<string, string> = {
   admin: 'amministratore',
   leader: 'capo reparto',
@@ -68,42 +85,54 @@ function LeaderView({ data }: { data: Dashboard }) {
       ? (data.troops.find((t) => t.id === targetId)?.name ?? targetId)
       : (data.patrols.find((p) => p.id === targetId)?.name ?? targetId);
 
+  // One proof, rendered the same whether it is waiting or already settled.
+  const card = (evidence: (typeof reviewable)[number]) => (
+    <article key={evidence.id} className="card" data-status={evidence.status}>
+      <div className="card-head">
+        <h3>
+          {titleOf(evidence.skillId)} · {nameOf(evidence.targetId, evidence.targetType)}
+        </h3>
+        <span className="row">
+          <span className="badge">{evidence.form?.color === 'amber' ? 'Ambra' : 'Blu'}</span>
+          <span className="badge" data-status={evidence.status}>
+            {STATUS_LABELS[evidence.status] ?? evidence.status}
+          </span>
+        </span>
+      </div>
+
+      <EvidenceTimes evidence={evidence} />
+      <Answers evidence={evidence} />
+
+      {evidence.status === 'rejected' && evidence.reason && (
+        <p className="error">Motivazione del rigetto: {evidence.reason}</p>
+      )}
+
+      {/* Approved evidence stays actionable: the domain allows revoking it with a reason,
+          and the spec asks for exactly that. Rejected evidence has no legal transition
+          until the patrol resubmits. */}
+      {evidence.status === 'pending' && <ReviewForm evidenceId={evidence.id} />}
+      {evidence.status === 'approved' && <ReviewForm evidenceId={evidence.id} onlyReject />}
+    </article>
+  );
+  const settled = reviewable.filter((e) => e.status !== 'pending');
+
   return (
     <>
-      <h2>
-        Prove · {pending.length} da verificare su {reviewable.length}
-      </h2>
-      {reviewable.length === 0 && <p className="muted">Nessuna prova inviata.</p>}
-      <div className="stack">
-        {reviewable.map((evidence) => (
-          <article key={evidence.id} className="card" data-status={evidence.status}>
-            <div className="card-head">
-              <h3>
-                {titleOf(evidence.skillId)} · {nameOf(evidence.targetId, evidence.targetType)}
-              </h3>
-              <span className="row">
-                <span className="badge">{evidence.form?.color === 'amber' ? 'Ambra' : 'Blu'}</span>
-                <span className="badge" data-status={evidence.status}>
-                  {STATUS_LABELS[evidence.status] ?? evidence.status}
-                </span>
-              </span>
-            </div>
+      {/* The queue used to be every proof ever submitted, unpaginated, above everything else: to
+          reach the patrols a leader scrolled past the whole archive. Only what needs a decision
+          stays up here; the rest is one click away and says how much it is holding. */}
+      <h2>Da verificare · {pending.length}</h2>
+      {pending.length === 0 && <p className="muted">Nessuna prova in attesa di verifica.</p>}
+      <div className="stack">{pending.map(card)}</div>
 
-            <EvidenceTimes evidence={evidence} />
-            <Answers evidence={evidence} />
-
-            {evidence.status === 'rejected' && evidence.reason && (
-              <p className="error">Motivazione del rigetto: {evidence.reason}</p>
-            )}
-
-            {/* Approved evidence stays actionable: the domain allows revoking it with a reason,
-                and the spec asks for exactly that. Rejected evidence has no legal transition
-                until the patrol resubmits. */}
-            {evidence.status === 'pending' && <ReviewForm evidenceId={evidence.id} />}
-            {evidence.status === 'approved' && <ReviewForm evidenceId={evidence.id} onlyReject />}
-          </article>
-        ))}
-      </div>
+      {settled.length > 0 && (
+        <details style={{ marginTop: '1.5rem' }}>
+          <summary className="muted">Archivio · {settled.length} prove già decise</summary>
+          <div className="stack" style={{ marginTop: '0.75rem' }}>
+            {settled.map(card)}
+          </div>
+        </details>
+      )}
 
       {data.troops.map((troop) => {
         const patrols = data.patrols.filter((p) => p.troopId === troop.id);
@@ -148,7 +177,12 @@ function LeaderView({ data }: { data: Dashboard }) {
               {patrols.map((patrol) => (
                 <article key={patrol.id} className="card">
                   <div className="card-head">
-                    <h3>{patrol.name}</h3>
+                    {/* The two halves of "avanzamento pattuglie" used to be unlinked: the states
+                        here, the position in the tree on /tree, and the leader bridging them by
+                        hand. */}
+                    <h3>
+                      <a href={`/tree?patrol=${encodeURIComponent(patrol.id)}`}>{patrol.name}</a>
+                    </h3>
                   </div>
                   {/* The meter carries the count, so the badge that used to repeat it is gone. */}
                   <QuestMeter
@@ -156,9 +190,15 @@ function LeaderView({ data }: { data: Dashboard }) {
                     value={patrol.completed}
                     total={patrol.skills.length}
                   />
-                  <div className="row" style={{ marginTop: '0.5rem' }}>
+                  {/* A chip per unlocked skill meant a wall of twenty to forty of them, where
+                      "how many are waiting on me?" had to be answered by counting. The tally says
+                      it, and only the states a leader can act on keep a chip. */}
+                  <p className="muted" style={{ marginTop: '0.5rem' }}>
+                    {tally(patrol)}
+                  </p>
+                  <div className="row">
                     {patrol.skills
-                      .filter((entry) => entry.status !== 'locked')
+                      .filter((entry) => entry.status === 'pending' || entry.status === 'rejected')
                       .map((entry) => (
                         <span
                           key={`${entry.skillId}-${entry.targetId}`}
