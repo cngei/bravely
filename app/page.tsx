@@ -82,7 +82,7 @@ function LeaderView({ data }: { data: Dashboard }) {
                 {titleOf(evidence.skillId)} · {nameOf(evidence.targetId, evidence.targetType)}
               </h3>
               <span className="row">
-                <span className="badge">{evidence.color === 'amber' ? 'Ambra' : 'Blu'}</span>
+                <span className="badge">{evidence.form?.color === 'amber' ? 'Ambra' : 'Blu'}</span>
                 <span className="badge" data-status={evidence.status}>
                   {STATUS_LABELS[evidence.status] ?? evidence.status}
                 </span>

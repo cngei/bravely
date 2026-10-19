@@ -100,8 +100,8 @@ export default async function SkillDetailPage({
             <article key={document.id} className="card" data-status={document.status}>
               <div className="card-head">
                 <h3>{STATUS_LABELS[document.status] ?? document.status}</h3>
-                {document.color && (
-                  <span className="badge">{document.color === 'amber' ? 'Ambra' : 'Blu'}</span>
+                {document.form?.color && (
+                  <span className="badge">{document.form.color === 'amber' ? 'Ambra' : 'Blu'}</span>
                 )}
               </div>
               <EvidenceTimes evidence={document} />

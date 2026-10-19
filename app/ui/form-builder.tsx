@@ -7,7 +7,7 @@
 // unique form colours, unique field ids within a form, minFiles <= maxFiles — and its messages
 // are shown as they come back.
 import { useRef, useState } from 'react';
-import type { Field, SkillForm } from '@/lib/model';
+import type { Field, SkillForm, SkillFormDraft } from '@/lib/model';
 import { saveSkillFormsAction } from '@/app/actions';
 
 type DraftField = Field & { key: string };
@@ -39,7 +39,7 @@ const toDraft = (forms: SkillForm[]): DraftForm[] =>
     })),
   }));
 
-const toPayload = (forms: DraftForm[]): SkillForm[] =>
+const toPayload = (forms: DraftForm[]): SkillFormDraft[] =>
   forms.map((form) => ({
     color: form.color,
     title: form.title.trim(),

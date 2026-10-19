@@ -5,7 +5,7 @@
 import { pool, mutate } from '../lib/db';
 import { execute } from '../lib/domain';
 import { commandSchema, type Command } from '../lib/commands';
-import type { Actor, Field, Skill } from '../lib/model';
+import type { Actor, Field, Skill, SkillDraft } from '../lib/model';
 
 const admin: Actor = {
   id: 'seed',
@@ -27,7 +27,7 @@ const photos = (label: string, minFiles = 1, maxFiles = 3): Field => ({
 
 // Ordered: a skill's prerequisites must already exist when it is saved, because
 // validateGraph() re-checks the whole graph on every saveSkill.
-const catalogue: Omit<Skill, 'revision'>[] = [
+const catalogue: SkillDraft[] = [
   {
     id: 'initial-1',
     title: 'Vita di Reparto',

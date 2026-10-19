@@ -104,7 +104,7 @@ export function TreeScreen({
             canSubmit: node.skill.scope === 'patrol' || role !== 'explorer',
             hasEvidence: evidence !== undefined,
             // The pip shows which form colour the patrol actually chose.
-            color: evidence?.color,
+            color: evidence?.form?.color,
             reason: evidence?.status === 'rejected' ? evidence.reason : undefined,
             waitingSeconds: evidence?.status === 'pending' ? evidence.waitingSeconds : undefined,
             x: node.x,

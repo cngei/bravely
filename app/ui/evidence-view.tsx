@@ -1,12 +1,16 @@
 // Rendering shared by the explorer's own skill card and the reviewer's queue. Extracted so the
 // two cannot drift: a reviewer must see exactly the submission the patrol sent, labelled with the
 // form as it was at submission time rather than as the catalogue reads today.
-import type { Evidence } from '@/lib/model';
+import type { Evidence, SkillForm } from '@/lib/model';
 
-// evidenceView() in lib/domain.ts strips history, submittedBy and reviewedBy before showing one
-// patrol's evidence to another, so these components must accept the redacted shape too. Asking
-// for a full Evidence would make the privacy rules and the UI incompatible.
-export type ViewableEvidence = Omit<Evidence, 'history' | 'submittedBy' | 'reviewedBy'> & {
+// evidenceView() in lib/domain.ts strips submittedBy and reviewedBy before showing one patrol's
+// evidence to another, so these components must accept the redacted shape too. Asking for a full
+// Evidence would make the privacy rules and the UI incompatible.
+//
+// `form` is resolved server-side from Evidence.formId — the exact form answered, current or
+// retired. It replaces formSnapshot, which carried a copy of the form inside every proof.
+export type ViewableEvidence = Omit<Evidence, 'submittedBy' | 'reviewedBy'> & {
+  form?: SkillForm;
   waitingSeconds?: number;
 };
 
@@ -33,7 +37,7 @@ const when = (iso?: string) => {
 
 // Labels the stored answers with the form as it was when submitted, not as it reads today.
 export function Answers({ evidence }: { evidence: ViewableEvidence }) {
-  const fields = evidence.formSnapshot?.fields ?? [];
+  const fields = evidence.form?.fields ?? [];
   if (!evidence.answers || !fields.length) return null;
   return (
     <dl>

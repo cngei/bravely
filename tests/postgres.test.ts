@@ -1,9 +1,10 @@
 import { beforeAll, afterAll, describe, it, expect, vi } from 'vitest';
 import pg from 'pg';
 import { randomUUID } from 'node:crypto';
-import { initialState, type Actor } from '../lib/model';
+import { emptyState, initialState, type Actor } from '../lib/model';
 import { execute } from '../lib/domain';
 import { migrate } from '../lib/migrate';
+import { save } from '../lib/repo';
 // Explicit opt-in; every run uses and removes a unique isolated schema.
 const auth = vi.hoisted(() => ({
   actor: { id: 'a', name: 'Admin', role: 'admin', troopIds: [], explorerTroopIds: [] } as Actor,
@@ -36,7 +37,8 @@ suite('real PostgreSQL persistence and concurrency', () => {
     await migrate(db.pool);
     const s = initialState();
     s.troops = [{ id: 't', name: 'Test', source: 'external' }];
-    await db.pool.query('INSERT INTO bravely_state VALUES(1,$1,0,now())', [JSON.stringify(s)]);
+    // Through the repository, so the fixture lands in the tables the app now reads.
+    await save(db.pool, emptyState(), s);
   });
   afterAll(async () => {
     await db?.pool.end();

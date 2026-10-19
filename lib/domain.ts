@@ -1,8 +1,18 @@
 import { randomUUID } from 'node:crypto';
-import type { Actor, State, Skill, Evidence, Patrol, Upload } from './model';
+import type { Actor, State, Skill, SkillForm, Evidence, Patrol, Upload } from './model';
+import { formId } from './model';
 import type { Command } from './commands';
 import { assert } from './errors';
 const unique = (items: string[]) => new Set(items).size === items.length;
+/** The exact form a proof answered: current if still on offer, retired if superseded by an edit. */
+export function formById(s: State, id?: string): SkillForm | undefined {
+  if (id === undefined) return undefined;
+  for (const skill of s.skills) {
+    const form = skill.forms.find((f) => f.id === id);
+    if (form) return form;
+  }
+  return s.retiredForms.find((f) => f.id === id);
+}
 export function assignedPatrol(s: State, a: Actor): Patrol | undefined {
   const person = s.people.find((p) => p.id === a.id && a.explorerTroopIds.includes(p.troopId));
   return s.patrols.find((p) => p.id === person?.patrolId && p.troopId === person?.troopId);
@@ -139,7 +149,6 @@ function start(s: State, a: Actor, skill: Skill, targetId: string, now: string):
       targetType: skill.scope,
       startedAt: now,
       status: 'started',
-      history: [{ at: now, actor: a.id, action: 'started' }],
     };
     s.evidence.push(e);
   }
@@ -214,10 +223,34 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
             'Limiti file non validi.',
           );
       }
-      const skill = { ...c.skill, revision: (old?.revision ?? 0) + 1 };
+      const revision = (old?.revision ?? 0) + 1;
+      // Forms are immutable by id. One whose title and questions are unchanged keeps its id, so
+      // proofs that answered it stay attached and no new row is minted for nothing. A changed one
+      // gets a fresh id and the previous version is retired — still readable through
+      // Evidence.formId, never offered to a patrol again.
+      const retired = new Map<string, SkillForm>();
+      const forms = c.skill.forms.map((f) => {
+        const previous = old?.forms.find((p) => p.color === f.color);
+        if (
+          previous &&
+          previous.title === f.title &&
+          JSON.stringify(previous.fields) === JSON.stringify(f.fields)
+        )
+          return previous;
+        if (previous) retired.set(previous.id, previous);
+        return { ...f, id: formId(c.skill.id, f.color, revision), skillId: c.skill.id };
+      });
+      // A colour dropped from the catalogue entirely: its form still has proofs pointing at it.
+      for (const p of old?.forms ?? [])
+        if (!forms.some((f) => f.id === p.id)) retired.set(p.id, p);
+
+      const skill = { ...c.skill, forms, revision };
       const next = s.skills.filter((k) => k.id !== skill.id).concat(skill);
       validateGraph(next);
       s.skills = next;
+      s.retiredForms = s.retiredForms
+        .filter((f) => !retired.has(f.id))
+        .concat([...retired.values()]);
       return skill;
     }
     case 'saveAchievements':
@@ -316,23 +349,15 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
         }
       }
       const e = start(s, a, skill, c.targetId, now);
-      e.color = c.color;
+      // The id, not a copy: the form is immutable, so this pins the exact questions answered.
+      e.formId = form.id;
       e.answers = structuredClone(c.answers);
-      e.formSnapshot = structuredClone(form);
-      e.skillRevision = skill.revision;
       e.submittedAt = now;
       e.submittedBy = a.id;
       e.status = 'pending';
       delete e.reason;
       delete e.reviewedAt;
       delete e.reviewedBy;
-      e.history.push({
-        at: now,
-        actor: a.id,
-        action: 'submitted',
-        answers: structuredClone(c.answers),
-        form: structuredClone(form),
-      });
       return e;
     }
     case 'reviewEvidence': {
@@ -358,7 +383,6 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
       e.reason = c.decision === 'reject' ? c.reason : undefined;
       e.reviewedAt = now;
       e.reviewedBy = a.id;
-      e.history.push({ at: now, actor: a.id, action: e.status, reason: e.reason });
       return e;
     }
     default: {
@@ -390,14 +414,18 @@ export function canReadEvidence(s: State, a: Actor, e: Evidence): boolean {
   );
 }
 export function evidenceView(s: State, a: Actor, e: Evidence) {
+  // Resolved from the id, so the reader sees the questions that were actually answered rather
+  // than how the catalogue reads today. This is the job Evidence.formSnapshot used to do by
+  // copying the whole form into every proof.
+  const form = formById(s, e.formId);
   if (
     a.role !== 'explorer' ||
     (e.targetType === 'patrol' && assignedPatrol(s, a)?.id === e.targetId)
   )
-    return e;
-  // Public documentation exposes the accepted version, never earlier rejected drafts.
-  const { history, submittedBy, reviewedBy, ...visible } = e;
-  return visible;
+    return { ...e, form };
+  // Another patrol's documentation: who wrote and who judged it stay private.
+  const { submittedBy, reviewedBy, ...visible } = e;
+  return { ...visible, form };
 }
 export function canReadUpload(s: State, a: Actor, u: Upload): boolean {
   if (a.role === 'admin' || a.role === 'leader') return true;
@@ -408,8 +436,8 @@ export function canReadUpload(s: State, a: Actor, u: Upload): boolean {
     (e) =>
       canReadEvidence(s, a, e) &&
       e.status === 'approved' &&
-      e.formSnapshot?.fields
-        .filter((f) => f.type === 'file')
+      formById(s, e.formId)
+        ?.fields.filter((f) => f.type === 'file')
         .some(
           (f) => Array.isArray(e.answers?.[f.id]) && (e.answers![f.id] as string[]).includes(u.id),
         ),
@@ -472,6 +500,9 @@ export function dashboard(s: State, a: Actor, now = Date.now()) {
     )
     .map((e) => ({
       ...e,
+      // Resolved here so no screen has to look a form up by id, and so the chosen colour still
+      // has a single source after Evidence.color was dropped: a form knows its own colour.
+      form: formById(s, e.formId),
       waitingSeconds:
         e.status === 'pending'
           ? Math.max(0, Math.floor((now - Date.parse(e.submittedAt!)) / 1000))

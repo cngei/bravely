@@ -7,6 +7,7 @@ import {
   missingPrerequisites,
   canReadEvidence,
   canReadUpload,
+  formById,
 } from '../lib/domain';
 import { commandSchema } from '../lib/commands';
 import { validateMedia } from '../lib/files';
@@ -215,8 +216,9 @@ describe('evidence lifecycle', () => {
     expect(e.reason).toBe('Rifare');
     submit(s, 'a', 'p1', explorer);
     expect(e.status).toBe('pending');
+    // Resubmitting clears the rejection outright. history[] used to retain the old reason; it was
+    // dropped deliberately, so the latest decision is the only one kept.
     expect(e.reason).toBeUndefined();
-    expect(e.history.some((h) => h.reason === 'Rifare')).toBe(true);
   });
   it('retains downstream achievements after revocation but blocks new descendants', () => {
     const s = fixture();
@@ -263,7 +265,11 @@ describe('evidence lifecycle', () => {
       type: 'saveSkill',
       skill: { ...k, forms: [{ ...k.forms[0], title: 'Nuovo titolo' }] },
     });
-    expect(e.formSnapshot?.title).toBe('Blue');
+    // The form the patrol answered is still resolvable after the admin rewrote it: saveSkill
+    // minted a new id for the changed form and retired the old one instead of mutating it.
+    expect(formById(s, e.formId)?.title).toBe('Blue');
+    expect(s.skills.find((k) => k.id === 'a')?.forms[0].title).toBe('Nuovo titolo');
+    expect(formById(s, e.formId)?.id).not.toBe(s.skills.find((k) => k.id === 'a')?.forms[0].id);
     expect(s.skills.find((k) => k.id === 'a')?.revision).toBe(2);
   });
   it('validates required fields, unknown fields, alternative forms and file ownership', () => {

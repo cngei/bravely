@@ -3,6 +3,8 @@ import type { Skill } from '../lib/model';
 import { layout, NODE } from '../lib/tree';
 
 const form = {
+  id: 'f1',
+  skillId: 'x',
   color: 'blue' as const,
   title: 'Blu',
   fields: [{ id: 'text', label: 'Testo', type: 'text' as const, required: true }],

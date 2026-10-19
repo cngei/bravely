@@ -10,7 +10,7 @@ import { mutate } from '@/lib/db';
 import { execute } from '@/lib/domain';
 import { commandSchema } from '@/lib/commands';
 import { AppError } from '@/lib/errors';
-import type { Achievement, Skill, SkillForm, State } from '@/lib/model';
+import type { Achievement, Skill, SkillFormDraft, State } from '@/lib/model';
 
 // `ok` exists so a form can tell a successful save from its own initial state: useActionState
 // starts at {}, and without the flag "saved" and "never submitted" look identical.
@@ -146,7 +146,7 @@ export async function removePrerequisiteAction(
 // field ids and minFiles <= maxFiles. Nothing is re-validated here.
 export async function saveSkillFormsAction(
   skillId: string,
-  forms: SkillForm[],
+  forms: SkillFormDraft[],
 ): Promise<ActionResult> {
   return runWith((state) => ({
     type: 'saveSkill',
@@ -218,7 +218,7 @@ const slugify = (text: string) =>
 
 // A skill cannot exist without at least one form (the schema requires 1..2), so a new one
 // starts with a single blue text question that the form builder can then edit.
-const STARTER_FORM: SkillForm = {
+const STARTER_FORM: SkillFormDraft = {
   color: 'blue',
   title: 'Racconto',
   fields: [{ id: 'racconto', label: 'Com’è andata la prova?', type: 'text', required: true }],

@@ -36,11 +36,24 @@ export interface Field {
   minFiles?: number;
   maxFiles?: number;
 }
+// Immutable by id. Editing the questions mints a new id and retires the old form into
+// State.retiredForms, so a proof that points at the old one keeps the questions it answered.
+// This is what replaced Evidence.formSnapshot, which copied the whole form into every proof.
 export interface SkillForm {
+  id: string;
+  /** Carried explicitly rather than parsed out of the id: retired forms outlive their place in
+      Skill.forms and still have to say which skill they belong to. */
+  skillId: string;
   color: 'blue' | 'amber';
   title: string;
   fields: Field[];
 }
+// What a caller submits: ids are the domain's to mint, because minting one is what decides
+// whether a proof keeps answering the old questions or the new ones. Matches the shape
+// commandSchema accepts for saveSkill.
+export type SkillFormDraft = Omit<SkillForm, 'id' | 'skillId'>;
+/** A skill as submitted: no revision (the domain bumps it) and no form ids (the domain mints them). */
+export type SkillDraft = Omit<Skill, 'revision' | 'forms'> & { forms: SkillFormDraft[] };
 export interface Skill {
   id: string;
   title: string;
@@ -59,23 +72,20 @@ export interface Evidence {
   startedAt: string;
   submittedAt?: string;
   submittedBy?: string;
-  color?: 'blue' | 'amber';
+  /** The exact form answered. Absent while 'started': no path chosen yet. Replaces formSnapshot,
+      skillRevision and color — the first two by reference, the third because a form knows its own
+      colour. */
+  formId?: string;
   answers?: Record<string, string | string[]>;
-  formSnapshot?: SkillForm;
-  skillRevision?: number;
   status: 'started' | 'pending' | 'approved' | 'rejected';
   reason?: string;
   reviewedAt?: string;
   reviewedBy?: string;
-  history: {
-    at: string;
-    actor: string;
-    action: string;
-    reason?: string;
-    answers?: Record<string, string | string[]>;
-    form?: SkillForm;
-  }[];
 }
+// history[] is deliberately gone. It was append-only, never read by any rule, and duplicated
+// what the columns above already say: who submitted, who decided, when, and why. All it added
+// were the earlier rounds of a resubmitted proof, which the team decided they do not need.
+// Attachments from those rounds survive regardless — nothing deletes uploads or files.
 export interface Upload {
   id: string;
   targetId: string;
@@ -98,18 +108,39 @@ export interface State {
   externalUsers: ExternalUser[];
   patrols: Patrol[];
   skills: Skill[];
+  /** Forms superseded by an edit, kept only so proofs submitted against them can still be read.
+      Never offered to a patrol again — Skill.forms is what is on offer. */
+  retiredForms: SkillForm[];
   evidence: Evidence[];
   uploads: Upload[];
   achievements: Achievement[];
 }
+// Form ids follow <skill>:<colour>:r<revision>, the same scheme the migrations used, so the next
+// edit of a form naturally lands on a new id rather than overwriting the one proofs point at.
+export const formId = (skillId: string, color: 'blue' | 'amber', revision: number) =>
+  `${skillId}:${color}:r${revision}`;
+/** Diff base for a first write: everything in a State, empty. */
+export const emptyState = (): State => ({
+  troops: [],
+  people: [],
+  externalUsers: [],
+  patrols: [],
+  skills: [],
+  retiredForms: [],
+  evidence: [],
+  uploads: [],
+  achievements: [],
+});
 export function initialState(): State {
-  const form: SkillForm = {
+  const form = (skillId: string): SkillForm => ({
+    id: formId(skillId, 'blue', 1),
+    skillId,
     color: 'blue',
     title: 'Documentazione di reparto',
     fields: [
       { id: 'description', label: 'Descrivi la prova svolta', type: 'text', required: true },
     ],
-  };
+  });
   return {
     troops: [],
     people: [],
@@ -121,10 +152,11 @@ export function initialState(): State {
       description: 'Configurare titolo e prove dal pannello amministratore.',
       scope: 'troop' as const,
       prerequisites: [],
-      forms: [form],
+      forms: [form(`initial-${n}`)],
       public: false,
       revision: 1,
     })),
+    retiredForms: [],
     evidence: [],
     uploads: [],
     achievements: [
