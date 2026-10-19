@@ -24,15 +24,19 @@ export function SkillCard({
   // Consultation and authorisation are two different questions, and conflating them was a bug:
   // the spec requires every skill's forms to be readable, including locked ones, with only the
   // submission disabled ("consultabili ma non conseguibili").
-  const interactive = canSubmit && status !== 'completed' && status !== 'locked';
+  //
+  // Gated on the prerequisites themselves, not on status === 'locked'. A proof submitted before a
+  // prerequisite was revoked now correctly reads 'pending', and gating on the status would have
+  // re-enabled a form whose submission the domain refuses.
+  const blocked = missing.length > 0;
+  const interactive = canSubmit && status !== 'completed' && !blocked;
   // Completed skills show the accepted answers instead; a blank disabled form would be noise.
   const consultable = !interactive && status !== 'completed';
-  const why =
-    status === 'locked'
-      ? 'Completa prima i prerequisiti per poter inviare questa prova.'
-      : canSubmit
-        ? undefined
-        : 'Questa prova è di competenza dei capi reparto: puoi consultarla ma non inviarla.';
+  const why = blocked
+    ? 'Completa prima i prerequisiti per poter inviare questa prova.'
+    : canSubmit
+      ? undefined
+      : 'Questa prova è di competenza dei capi reparto: puoi consultarla ma non inviarla.';
   return (
     <article className="card">
       <div className="card-head">
@@ -43,12 +47,12 @@ export function SkillCard({
       </div>
       {skill.description && <p className="muted">{skill.description}</p>}
 
-      {status === 'locked' && (
-        <p className="muted">Prima servono: {missing.map(titleOf).join(', ')}.</p>
-      )}
       {status === 'pending' && evidence?.waitingSeconds !== undefined && (
         <p className="muted">In attesa di verifica {waiting(evidence.waitingSeconds)}.</p>
       )}
+      {/* Shown whenever something is missing, not only when nothing was sent: a proof can be
+          waiting for review and blocked at the same time, and the patrol needs to see both. */}
+      {blocked && <p className="muted">Prima servono: {missing.map(titleOf).join(', ')}.</p>}
       {status === 'rejected' && evidence?.reason && (
         <p className="error">Rigettata: {evidence.reason}</p>
       )}

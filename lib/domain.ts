@@ -271,8 +271,7 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
         return { ...f, id: formId(c.skill.id, f.color, revision), skillId: c.skill.id };
       });
       // A colour dropped from the catalogue entirely: its form still has proofs pointing at it.
-      for (const p of old?.forms ?? [])
-        if (!forms.some((f) => f.id === p.id)) retired.set(p.id, p);
+      for (const p of old?.forms ?? []) if (!forms.some((f) => f.id === p.id)) retired.set(p.id, p);
 
       const skill = { ...c.skill, forms, revision };
       const next = s.skills.filter((k) => k.id !== skill.id).concat(skill);
@@ -481,12 +480,17 @@ function progress(s: State, p: Patrol) {
     return {
       skillId: k.id,
       targetId: target,
+      // The proof's own state wins over the prerequisites. The other way round, a submission made
+      // before a prerequisite was revoked read as 'locked' and the patrol stopped seeing it had
+      // anything under review at all — while the leader's queue still listed it, unapprovable and
+      // unexplained. 'locked' now means only what it says: nothing sent, and nothing can be.
+      //
+      // Whether the patrol may *act* is missingPrerequisites, not this field. The two were
+      // conflated: callers gating on `status !== 'locked'` must gate on `missing.length === 0`.
       status:
         e?.status === 'approved'
           ? 'completed'
-          : missing.length
-            ? 'locked'
-            : (e?.status ?? 'available'),
+          : (e?.status ?? (missing.length ? 'locked' : 'available')),
       missingPrerequisites: missing,
       startedAt: e?.startedAt,
     };
@@ -533,6 +537,9 @@ export function dashboard(s: State, a: Actor, now = Date.now()) {
       // Resolved here so no screen has to look a form up by id, and so the chosen colour still
       // has a single source after Evidence.color was dropped: a form knows its own colour.
       form: formById(s, e.formId),
+      // So the reviewer is told why the approve button will refuse, instead of finding out by
+      // pressing it: reviewEvidence re-checks these before approving.
+      missingPrerequisites: missingPrerequisites(s, skillById(s, e.skillId), e.targetId),
       waitingSeconds:
         e.status === 'pending'
           ? Math.max(0, Math.floor((now - Date.parse(e.submittedAt!)) / 1000))

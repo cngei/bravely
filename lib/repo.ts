@@ -74,7 +74,10 @@ export async function load(db: Db): Promise<State> {
     db,
     'SELECT id, title, description, scope, prerequisites, public, revision, form_ids FROM skills ORDER BY id',
   );
-  const formRows = await select<FormRow>(db, 'SELECT id, skill_id, color, body FROM forms ORDER BY id');
+  const formRows = await select<FormRow>(
+    db,
+    'SELECT id, skill_id, color, body FROM forms ORDER BY id',
+  );
   const evidenceRows = await select<Record<string, unknown>>(
     db,
     `SELECT id, skill_id, form_id, target_id, target_type, status, answers,
@@ -198,7 +201,10 @@ async function sync<T>(
 }
 
 /** Current forms live inside their skill; retired ones alongside. The table holds the union. */
-const allForms = (s: State): SkillForm[] => [...s.skills.flatMap((k) => k.forms), ...s.retiredForms];
+const allForms = (s: State): SkillForm[] => [
+  ...s.skills.flatMap((k) => k.forms),
+  ...s.retiredForms,
+];
 
 /**
  * Writes the difference between two States. Parents before children, because the foreign keys

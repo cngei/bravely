@@ -362,13 +362,12 @@ describe('patrol progress', () => {
     expect(entry(s, 'p1', 'a').status).toBe('rejected');
   });
 
-  // DECISION PENDING. Prerequisites are checked before the evidence status, so a proof that was
-  // submitted and then lost a prerequisite reads as 'locked' and the patrol stops seeing that it
-  // has anything under review — while the leader's queue still lists it, because that list reads
-  // the evidence directly. This test pins today's behaviour rather than endorsing it: the entry
-  // already carries missingPrerequisites, so the UI could show 'pending' and the missing list
-  // together instead of collapsing them.
-  it('reports a pending proof as locked once it loses a prerequisite', () => {
+  // Decided: a proof keeps its own state even when a prerequisite is revoked under it. The other
+  // way round, the patrol stopped seeing it had anything under review — their submission simply
+  // vanished behind 'locked' — while the leader's queue still listed it, unapprovable and
+  // unexplained. Both facts are now reported, and whether the patrol may act is
+  // missingPrerequisites rather than the status.
+  it('keeps a pending proof pending when it loses a prerequisite, and says what is missing', () => {
     const s = fixture();
     unlock(s);
     add(s);
@@ -383,9 +382,29 @@ describe('patrol progress', () => {
       decision: 'reject',
       reason: 'Errore',
     });
-    expect(entry(s, 'p1', 'b').status).toBe('locked');
-    // The proof itself is untouched and still awaiting review.
+
+    expect(entry(s, 'p1', 'b').status).toBe('pending');
+    expect(entry(s, 'p1', 'b').missingPrerequisites).toContain('a');
     expect(s.evidence.find((e) => e.skillId === 'b')?.status).toBe('pending');
+    // And the reviewer is told, rather than discovering it when the approve button refuses.
+    const data = dashboard(s, admin);
+    if (!('patrols' in data)) throw new Error('missing dashboard');
+    expect(data.evidence.find((e) => e.skillId === 'b')?.missingPrerequisites).toContain('a');
+    expect(() =>
+      approve(
+        s,
+        s.evidence.find((e) => e.skillId === 'b')!,
+      ),
+    ).toThrow();
+  });
+
+  it('still reports locked when nothing has been sent at all', () => {
+    // 'locked' now means only that: no proof, and none possible yet. It is no longer doing double
+    // duty as the UI's gate.
+    const s = fixture();
+    add(s);
+    expect(entry(s, 'p1', 'a').status).toBe('locked');
+    expect(entry(s, 'p1', 'a').missingPrerequisites.length).toBeGreaterThan(0);
   });
 
   it('counts down remaining and stops at zero past the threshold', () => {

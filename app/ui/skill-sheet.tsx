@@ -66,14 +66,16 @@ export function SkillSheet({ skill, onClose }: { skill: SheetSkill | null; onClo
 function Body({ skill, onClose }: { skill: SheetSkill; onClose: () => void }) {
   // Without a target there is nothing to submit against, so the forms can only be described.
   const submittable = skill.canSubmit && skill.targetId !== undefined;
-  const interactive = submittable && skill.status !== 'completed' && skill.status !== 'locked';
+  // Gated on the prerequisites, not on status === 'locked' — same reasoning as SkillCard: a proof
+  // submitted before a prerequisite was revoked reads 'pending' but still cannot be sent again.
+  const blocked = skill.missing.length > 0;
+  const interactive = submittable && skill.status !== 'completed' && !blocked;
   const consultable = !interactive && skill.status !== 'completed';
-  const why =
-    skill.status === 'locked'
-      ? 'Completa prima i prerequisiti per poter inviare questa prova.'
-      : skill.canSubmit
-        ? undefined
-        : 'Questa prova è di competenza dei capi reparto: puoi consultarla ma non inviarla.';
+  const why = blocked
+    ? 'Completa prima i prerequisiti per poter inviare questa prova.'
+    : skill.canSubmit
+      ? undefined
+      : 'Questa prova è di competenza dei capi reparto: puoi consultarla ma non inviarla.';
 
   return (
     <div className="sheet-body">
@@ -96,12 +98,10 @@ function Body({ skill, onClose }: { skill: SheetSkill; onClose: () => void }) {
 
       {skill.description && <p>{skill.description}</p>}
 
-      {skill.status === 'locked' && skill.missing.length > 0 && (
-        <p className="muted">Prima servono: {skill.missing.join(', ')}.</p>
-      )}
       {skill.status === 'pending' && skill.waitingSeconds !== undefined && (
         <p className="muted">In attesa di verifica {waiting(skill.waitingSeconds)}.</p>
       )}
+      {blocked && <p className="muted">Prima servono: {skill.missing.join(', ')}.</p>}
       {skill.status === 'rejected' && skill.reason && (
         <p className="error">Rigettata: {skill.reason}</p>
       )}

@@ -91,6 +91,16 @@ function LeaderView({ data }: { data: Dashboard }) {
         <p className="error">Motivazione del rigetto: {evidence.reason}</p>
       )}
 
+      {/* reviewEvidence re-checks the prerequisites before approving, so without this the approve
+          button simply refuses and the reviewer has no idea why. Happens when an approved proof
+          upstream is revoked while this one is still waiting. */}
+      {evidence.status === 'pending' && evidence.missingPrerequisites.length > 0 && (
+        <p className="error">
+          Non approvabile: alla pattuglia mancano{' '}
+          {evidence.missingPrerequisites.map(titleOf).join(', ')}.
+        </p>
+      )}
+
       {/* Approved evidence stays actionable: the domain allows revoking it with a reason,
           and the spec asks for exactly that. Rejected evidence has no legal transition
           until the patrol resubmits. */}
