@@ -207,14 +207,34 @@ Sessioni opache, casuali, hashate nel database e cookie `HttpOnly`/`SameSite=Lax
 
 ## Verifiche
 
+Non c'è CI: si verifica a mano, e questi tre comandi sono tutto.
+
 ```sh
 npm run typecheck
-npm test
-# Include persistenza, concorrenza e route HTTP su schema temporaneo isolato:
 TEST_DATABASE_URL=postgres://bravely:bravely-local@localhost:5434/bravely npm test
 npm run build
 ```
 
-I test Postgres creano e rimuovono un proprio schema: non azzerano i dati dell'app. Le suite coprono isolamento tra reparti, assegnazione mancante/trasferimenti, DAG e prerequisiti transitivi, timestamp, revisione/reinvio/revoca, versioni dei form, visibilità documenti, achievement, mapping backend, transazioni, scritture concorrenti, upload/download e protezione dell'origine. Il login reale Keycloak con `dev-cr` è stato verificato nel browser.
+> **`TEST_DATABASE_URL` non è opzionale, è la differenza fra 62 test e 53.** Senza quella
+> variabile `npm test` salta i 9 test che richiedono un database **e esce comunque verde**: vedi
+> `Tests 53 passed | 9 skipped (62)` e sembra tutto a posto. Sono anche i test che contano di più,
+> perché alcune cose si rompono **solo** passando per un vero Postgres — il confronto dei form per
+> serializzazione, per esempio, passava ogni test in memoria e sbagliava in produzione, perché
+> jsonb non conserva l'ordine delle chiavi. Lancia sempre la riga completa.
+
+L'URL è quello di `compose.yaml`; serve il database su (`finch compose up -d bravely-db`, o
+`docker compose` se usi Docker).
+
+I test Postgres creano e rimuovono un proprio schema: non azzerano i dati dell'app. Le suite
+coprono isolamento tra reparti, assegnazione mancante/trasferimenti, DAG e prerequisiti
+transitivi, timestamp, revisione/reinvio/revoca, visibilità documenti, achievement, avanzamento
+delle pattuglie, mapping backend, transazioni, scritture concorrenti, upload/download e protezione
+dell'origine. Sul database reale, in più: il runner delle migrazioni (applicazione singola, no-op
+alla seconda corsa, rifiuto di una migrazione modificata), il round-trip di uno `State` completo
+attraverso le tabelle, e l'immutabilità dei form attraverso jsonb.
+
+Il login reale Keycloak con `dev-cr` è stato verificato nel browser. `lib/auth.ts` resta però senza
+test automatici, e `lib/service.ts` è l'unico modulo mockato: tutto il percorso dell'identità è
+coperto solo da quella verifica manuale.
 
 Riferimenti: specifiche nel PDF fornito; integrazione ricavata dal codice del backend; convenzioni Next.js da [Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers) e [cookies](https://nextjs.org/docs/app/api-reference/functions/cookies).
