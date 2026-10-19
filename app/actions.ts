@@ -8,7 +8,7 @@ import { refresh } from 'next/cache';
 import { currentActor } from '@/lib/service';
 import { mutate } from '@/lib/db';
 import { execute } from '@/lib/domain';
-import { commandSchema } from '@/lib/commands';
+import { commandSchema, needsGlobalLock } from '@/lib/commands';
 import { AppError } from '@/lib/errors';
 import type { Achievement, Skill, SkillFormDraft, State } from '@/lib/model';
 
@@ -18,17 +18,32 @@ export type ActionResult = { error?: string; ok?: true };
 
 const field = (data: FormData, name: string) => String(data.get(name) ?? '');
 
-async function run(command: unknown): Promise<ActionResult> {
-  return runWith(() => command);
+// Parsed here rather than inside the transaction, so the command type is known before the lock
+// decision is made. The proof actions — start, submit, review — reach the database without
+// serializing against the rest of the troop.
+async function run(input: unknown): Promise<ActionResult> {
+  let command;
+  try {
+    command = commandSchema.parse(input);
+  } catch (error) {
+    if (error instanceof ZodError) return { error: 'Dati non validi.' };
+    throw error;
+  }
+  return runWith(() => command, needsGlobalLock(command));
 }
 
 // saveSkill replaces the whole skill, so editing one field means reading the current value
 // first. The build callback runs inside mutate(), under the same row lock as the write, so a
 // concurrent edit cannot be silently clobbered between the read and the save.
-async function runWith(build: (state: State) => unknown): Promise<ActionResult> {
+async function runWith(
+  build: (state: State) => unknown,
+  // Defaults to serialized: the callers that pass a builder are the catalogue and roster ones,
+  // which is exactly where the cross-row invariants are.
+  serialize = true,
+): Promise<ActionResult> {
   try {
     const actor = await currentActor();
-    await mutate((state) => execute(state, actor, commandSchema.parse(build(state))));
+    await mutate((state) => execute(state, actor, commandSchema.parse(build(state))), serialize);
   } catch (error) {
     // Domain rules already carry a user-facing Italian message; anything else is a real
     // fault and belongs to the error boundary, not to a form field.

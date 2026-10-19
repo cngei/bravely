@@ -15,7 +15,7 @@ import {
   skillById,
   writable,
 } from '@/lib/domain';
-import { commandSchema } from '@/lib/commands';
+import { commandSchema, needsGlobalLock } from '@/lib/commands';
 import { boundedBody, MAX_FILE_SIZE, validateMedia } from '@/lib/files';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -95,7 +95,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pat
       const command = commandSchema.parse(
         JSON.parse((await boundedBody(request, 1024 * 1024)).toString()),
       );
-      return json(await mutate((s) => execute(s, a, command)));
+      return json(await mutate((s) => execute(s, a, command), needsGlobalLock(command)));
     }
     if (path.length === 1 && path[0] === 'files') {
       const url = new URL(request.url),
@@ -113,6 +113,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pat
       const bytes = await boundedBody(request, MAX_FILE_SIZE),
         type = validateMedia(bytes);
       return json(
+        // Unserialized: this only ever touches one patrol's proof and its own bytes. Two uploads
+        // racing to open the same proof converge on the retry in mutate().
         await mutate(async (s, client) => {
           const skill = skillById(s, skillId);
           writable(s, a, skill, targetId);
@@ -137,7 +139,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pat
           await client.query('INSERT INTO files VALUES($1,$2)', [upload.id, bytes]);
           s.uploads.push(upload);
           return { ...upload, url: `/api/files/${upload.id}` };
-        }),
+        }, false),
         201,
       );
     }

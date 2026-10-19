@@ -10,22 +10,43 @@ export const pool = (globalDb.bravelyPool ??= new pg.Pool({
 export async function readState(): Promise<State> {
   return load(pool);
 }
-// Writes still serialize globally, exactly as they did when the whole domain was one row and the
-// lock was `SELECT ... FOR UPDATE` on it. The lock moved to an advisory one because there is no
-// longer a row to take it on — the behaviour, including the concurrency test that pins it, is
-// unchanged. Narrowing it (commands that touch only proofs need no global lock, since
-// UNIQUE (skill_id, target_id) now enforces the invariant it protected) is a separate change.
+// When the whole domain was one row, `SELECT ... FOR UPDATE` on it serialized every write. Now
+// only the two commands that enforce a cross-row invariant the schema cannot express need that —
+// see needsGlobalLock() in lib/commands.ts for which and why.
+//
+// `serialize` defaults to true on purpose: forgetting it costs throughput, while forgetting the
+// other way round would cost an invariant, and silently.
 //
 // The transaction still spans the file bytes: the caller gets the same client, so an upload's
 // rows and its bytes commit together.
 const WRITE_LOCK = 73642720;
+const isUniqueViolation = (error: unknown) =>
+  typeof error === 'object' && error !== null && (error as { code?: unknown }).code === '23505';
+
 export async function mutate<T>(
   fn: (state: State, client: pg.PoolClient) => Promise<T> | T,
+  serialize = true,
+): Promise<T> {
+  try {
+    return await attempt(fn, serialize);
+  } catch (error) {
+    // Two unserialized writers racing for the same new row: one inserts, the other's UNIQUE
+    // constraint fires. Retried once against a fresh load it converges rather than failing — the
+    // loser now finds the row and the reducer treats it as existing. This is the trade the global
+    // lock used to hide: the constraint catches what the lock prevented.
+    if (serialize || !isUniqueViolation(error)) throw error;
+    return attempt(fn, serialize);
+  }
+}
+
+async function attempt<T>(
+  fn: (state: State, client: pg.PoolClient) => Promise<T> | T,
+  serialize: boolean,
 ): Promise<T> {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query('SELECT pg_advisory_xact_lock($1)', [WRITE_LOCK]);
+    if (serialize) await client.query('SELECT pg_advisory_xact_lock($1)', [WRITE_LOCK]);
     const state = await load(client);
     // The reducer mutates `state` in place, so the diff needs a copy taken before it runs.
     const before = structuredClone(state);

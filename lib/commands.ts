@@ -77,3 +77,25 @@ export const commandSchema = z.discriminatedUnion('type', [
     .strict(),
 ]);
 export type Command = z.infer<typeof commandSchema>;
+
+// Which commands still have to serialize against each other, now that the domain lives in tables
+// instead of one row whose lock serialized everything.
+//
+// Only two need it, and both for the same reason: they enforce an invariant that spans rows and
+// that the schema cannot express, so two concurrent runs can each be valid alone and invalid
+// together.
+//   createPatrol  the duplicate-name check is case-insensitive per troop, in application code.
+//   saveSkill     validateGraph() checks the whole DAG and the "exactly two initial skills" rule;
+//                 two concurrent saves could compose a cycle neither of them sees.
+//
+// Everything else is safe to run concurrently:
+//   startSkill / submitEvidence  UNIQUE (skill_id, target_id) now enforces one proof per target,
+//                 which is precisely what the global lock was protecting. A submission racing a
+//                 revoked prerequisite is still caught, because reviewEvidence re-checks them
+//                 before approving.
+//   reviewEvidence / assignExplorer / saveAchievements / saveExternalUser  single-row outcomes
+//                 where two racing writers want the same end state or the later one legitimately
+//                 wins — a human race, not a corrupted invariant.
+//   createTroop   a fresh uuid cannot collide.
+const SERIALIZED = new Set<Command['type']>(['createPatrol', 'saveSkill']);
+export const needsGlobalLock = (command: Command) => SERIALIZED.has(command.type);

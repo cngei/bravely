@@ -25,6 +25,10 @@ export interface Db {
   query(sql: string, values?: unknown[]): Promise<{ rows: unknown[] }>;
 }
 
+// Every load is ORDER BY its key, which is not cosmetic: save() writes rows in the order it finds
+// them, so two concurrent transactions touching the same rows in different orders could deadlock.
+// A fixed order means they queue instead. It also makes load() deterministic, which the diff and
+// the tests both benefit from.
 const select = async <T>(db: Db, sql: string) => (await db.query(sql)).rows as T[];
 /** jsonb columns need a JSON string: node-postgres would turn a JS array into a Postgres array
     literal, which is not valid jsonb. */
@@ -49,42 +53,42 @@ type SkillRow = {
 };
 
 export async function load(db: Db): Promise<State> {
-  const troops = await select<Troop>(db, 'SELECT id, name, source FROM troops');
+  const troops = await select<Troop>(db, 'SELECT id, name, source FROM troops ORDER BY id');
   const patrolRows = await select<{ id: string; troop_id: string; name: string }>(
     db,
-    'SELECT id, troop_id, name FROM patrols',
+    'SELECT id, troop_id, name FROM patrols ORDER BY id',
   );
   const peopleRows = await select<{
     id: string;
     troop_id: string;
     patrol_id: string | null;
     name: string;
-  }>(db, 'SELECT id, troop_id, patrol_id, name FROM people');
+  }>(db, 'SELECT id, troop_id, patrol_id, name FROM people ORDER BY id');
   const externalRows = await select<{
     subject: string;
     name: string;
     role: 'explorer' | 'leader';
     troop_ids: string[];
-  }>(db, 'SELECT subject, name, role, troop_ids FROM external_users');
+  }>(db, 'SELECT subject, name, role, troop_ids FROM external_users ORDER BY subject');
   const skillRows = await select<SkillRow>(
     db,
-    'SELECT id, title, description, scope, prerequisites, public, revision, form_ids FROM skills',
+    'SELECT id, title, description, scope, prerequisites, public, revision, form_ids FROM skills ORDER BY id',
   );
-  const formRows = await select<FormRow>(db, 'SELECT id, skill_id, color, body FROM forms');
+  const formRows = await select<FormRow>(db, 'SELECT id, skill_id, color, body FROM forms ORDER BY id');
   const evidenceRows = await select<Record<string, unknown>>(
     db,
     `SELECT id, skill_id, form_id, target_id, target_type, status, answers,
             started_at, submitted_at, submitted_by, reviewed_at, reviewed_by, reason
-     FROM evidence`,
+     FROM evidence ORDER BY id`,
   );
   const uploadRows = await select<Record<string, unknown>>(
     db,
     `SELECT id, skill_id, target_id, target_type, name, type, size, created_by, created_at
-     FROM uploads`,
+     FROM uploads ORDER BY id`,
   );
   const achievementRows = await select<Achievement>(
     db,
-    'SELECT id, title, threshold FROM achievements',
+    'SELECT id, title, threshold FROM achievements ORDER BY id',
   );
 
   const forms = new Map<string, SkillForm>(

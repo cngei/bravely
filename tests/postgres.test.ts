@@ -147,14 +147,21 @@ suite('real PostgreSQL persistence and concurrency', () => {
       Buffer.from([0, 1, 2, 255]),
     );
   });
+  // Unserialized on purpose, because that is how startSkill now reaches the database: the one
+  // proof per target that the global write lock used to protect is UNIQUE (skill_id, target_id)
+  // instead. So the racing writers hit the constraint rather than queueing, and mutate() retries
+  // each loser once against a fresh load — where the reducer finds the row and treats the proof as
+  // already open. None of them may fail, and only one row may exist.
   it('multiple concurrent start requests create only one evidence record', async () => {
-    await Promise.all(
+    const results = await Promise.allSettled(
       Array.from({ length: 6 }, () =>
-        db.mutate((s) =>
-          execute(s, actor, { type: 'startSkill', skillId: 'initial-1', targetId: 't' }),
+        db.mutate(
+          (s) => execute(s, actor, { type: 'startSkill', skillId: 'initial-1', targetId: 't' }),
+          false,
         ),
       ),
     );
+    expect(results.filter((r) => r.status === 'rejected')).toEqual([]);
     expect((await db.readState()).evidence).toHaveLength(1);
   });
   it('HTTP command handler validates payloads and blocks cross-origin writes', async () => {
