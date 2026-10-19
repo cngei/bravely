@@ -194,7 +194,14 @@ console.log(await response.json());
 
 ## Persistenza e autenticazione
 
-`bravely_state` contiene l'aggregato di dominio in JSONB, aggiornato dentro una transazione con `SELECT ... FOR UPDATE`; i file sono in una tabella `bytea` nello stesso database. Questo modello privilegia la semplicità e la coerenza della prima versione: le scritture sono serializzate anche con più processi Next.js. Per volumi elevati, suddividere l'aggregato in tabelle e spostare i media in uno storage privato. Sessioni e flussi OIDC hanno tabelle separate. Nessun dato di dominio vive soltanto in memoria.
+Il dominio sta in tabelle: `troops`, `patrols`, `people`, `external_users`, `skills`, `forms`, `evidence`, `uploads`, `achievements`. I file sono in una tabella `bytea` nello stesso database, e `uploads.id` la referenzia, quindi i metadati non possono esistere senza i byte. Sessioni e flussi OIDC hanno tabelle separate. Nessun dato di dominio vive soltanto in memoria.
+
+Fino alla prima versione l'aggregato era un **unico documento JSONB** su una riga, aggiornato con `SELECT ... FOR UPDATE`: una scelta che privilegiava semplicità e coerenza, e che a scala di reparto le pagava entrambe. Le migrazioni `002`–`004` l'hanno suddiviso in tabelle, come questo paragrafo prevedeva.
+
+`execute()` è rimasta una funzione pura sull'intero `State`: `lib/repo.ts` lo carica dalle tabelle, il reducer lo muta, e `save()` riscrive **la differenza**. Due conseguenze da conoscere prima di toccare quel file:
+
+- **I form sono immutabili per id.** Modificare le domande inserisce una riga nuova e ritira la precedente, così una prova continua a mostrare le domande a cui ha davvero risposto. È il meccanismo che ha sostituito la copia del form dentro ogni prova.
+- **Solo due comandi serializzano** (`createPatrol` e `saveSkill`, gli unici che impongono un invariante che attraversa più righe). Per le prove ci pensa `UNIQUE (skill_id, target_id)`.
 
 Sessioni opache, casuali, hashate nel database e cookie `HttpOnly`/`SameSite=Lax`; token cifrati a riposo con AES-GCM. Code flow verificato dalla libreria `openid-client` con state, nonce e PKCE. Le sessioni scadono insieme al token di accesso (massimo un'ora): un nuovo login può riutilizzare la sessione SSO Keycloak. Questa versione non rinnova automaticamente i token; uscire da Bravely non chiude la sessione SSO globale. In produzione servono HTTPS per app e issuer e un segreto dedicato; il client può essere confidential tramite `KEYCLOAK_CLIENT_SECRET`.
 

@@ -1,0 +1,12 @@
+-- Removes the single-document table. The tables created in 002 have been the source of truth
+-- since the code cutover, and this row has been dead weight kept as a backup since.
+--
+-- Checked before dropping: no application code reads bravely_state (only 001 and 002 mention it,
+-- and both are history), and every collection in the document had at least as many rows in its
+-- table.
+--
+-- Do not be tempted to tidy 002 afterwards. It reads bravely_state to backfill, and on a fresh
+-- database the ledger runs 001 → 002 → 003 → 004 in order, so the table exists when 002 needs it
+-- and is gone by the end. Editing 002 now would also trip the checksum guard in lib/migrate.ts,
+-- which is the guard doing its job.
+DROP TABLE IF EXISTS bravely_state;
