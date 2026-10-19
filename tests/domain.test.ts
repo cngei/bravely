@@ -305,6 +305,109 @@ describe('evidence lifecycle', () => {
     ).toThrow();
   });
 });
+// progress() feeds three screens — the explorer's tree, the leader's patrol cards and the meter on
+// /tree — and until now had one oblique assertion covering it, through a single achievement
+// threshold. These pin the status precedence and the counting, which are the parts a reader of the
+// function has to work out for themselves.
+describe('patrol progress', () => {
+  const entry = (s: State, patrolId: string, skillId: string) => {
+    const data = dashboard(s, admin);
+    if (!('patrols' in data)) throw new Error('missing dashboard');
+    return data.patrols.find((p) => p.id === patrolId)!.skills.find((k) => k.skillId === skillId)!;
+  };
+  const patrol = (s: State, patrolId: string) => {
+    const data = dashboard(s, admin);
+    if (!('patrols' in data)) throw new Error('missing dashboard');
+    return data.patrols.find((p) => p.id === patrolId)!;
+  };
+
+  it('reports every patrol skill as locked until both initial troop skills are approved', () => {
+    const s = fixture();
+    add(s);
+    expect(entry(s, 'p1', 'a').status).toBe('locked');
+    expect(entry(s, 'p1', 'a').missingPrerequisites).toContain('initial-1');
+    expect(patrol(s, 'p1').completed).toBe(0);
+  });
+
+  it('counts the two initial troop skills towards every patrol of that troop', () => {
+    const s = fixture();
+    unlock(s, 't1');
+    add(s);
+    // Both patrols of t1 jump to 2 without having done anything themselves: the loop runs over
+    // every skill, and a troop-scoped one is filed against the troop. This is why the achievement
+    // with threshold 3 needs only one patrol skill, which nothing else in the suite spells out.
+    expect(patrol(s, 'p1').completed).toBe(2);
+    expect(patrol(s, 'p2').completed).toBe(2);
+    expect(patrol(s, 'p3').completed).toBe(0);
+    expect(entry(s, 'p1', 'a').status).toBe('available');
+  });
+
+  it('keeps an approved skill completed after a prerequisite is revoked', () => {
+    const s = fixture();
+    unlock(s);
+    add(s);
+    add(s, 'b', ['a']);
+    approve(s, submit(s, 'a', 'p1'));
+    const b = submit(s, 'b', 'p1');
+    approve(s, b);
+    const a = s.evidence.find((e) => e.skillId === 'a')!;
+    execute(s, admin, {
+      type: 'reviewEvidence',
+      evidenceId: a.id,
+      decision: 'reject',
+      reason: 'Errore',
+    });
+    // Approval is checked before prerequisites, so history is not rewritten under the patrol.
+    expect(entry(s, 'p1', 'b').status).toBe('completed');
+    expect(entry(s, 'p1', 'a').status).toBe('rejected');
+  });
+
+  // DECISION PENDING. Prerequisites are checked before the evidence status, so a proof that was
+  // submitted and then lost a prerequisite reads as 'locked' and the patrol stops seeing that it
+  // has anything under review — while the leader's queue still lists it, because that list reads
+  // the evidence directly. This test pins today's behaviour rather than endorsing it: the entry
+  // already carries missingPrerequisites, so the UI could show 'pending' and the missing list
+  // together instead of collapsing them.
+  it('reports a pending proof as locked once it loses a prerequisite', () => {
+    const s = fixture();
+    unlock(s);
+    add(s);
+    add(s, 'b', ['a']);
+    approve(s, submit(s, 'a', 'p1'));
+    submit(s, 'b', 'p1');
+    expect(entry(s, 'p1', 'b').status).toBe('pending');
+    const a = s.evidence.find((e) => e.skillId === 'a')!;
+    execute(s, admin, {
+      type: 'reviewEvidence',
+      evidenceId: a.id,
+      decision: 'reject',
+      reason: 'Errore',
+    });
+    expect(entry(s, 'p1', 'b').status).toBe('locked');
+    // The proof itself is untouched and still awaiting review.
+    expect(s.evidence.find((e) => e.skillId === 'b')?.status).toBe('pending');
+  });
+
+  it('counts down remaining and stops at zero past the threshold', () => {
+    const s = fixture();
+    execute(s, admin, {
+      type: 'saveAchievements',
+      achievements: [{ id: 'due', title: 'Due', threshold: 2 }],
+    });
+    const remaining = () => patrol(s, 'p1').achievements[0];
+    expect(remaining().remaining).toBe(2);
+    expect(remaining().earned).toBe(false);
+    // unlock() approves both troop skills, which already carries p1 past a threshold of two.
+    unlock(s);
+    expect(remaining().remaining).toBe(0);
+    expect(remaining().earned).toBe(true);
+    add(s);
+    approve(s, submit(s, 'a', 'p1'));
+    expect(patrol(s, 'p1').completed).toBe(3);
+    expect(remaining().remaining).toBe(0);
+  });
+});
+
 describe('documentation visibility', () => {
   it('leaders read other troops but cannot review them', () => {
     const s = fixture();
