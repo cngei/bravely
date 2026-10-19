@@ -5,30 +5,14 @@ import { AppError } from '@/lib/errors';
 import { SkillCard } from './ui/skill-card';
 import { CreatePatrolForm, ReviewForm } from './ui/leader-forms';
 import { ExplorerTable } from './ui/explorer-table';
-import { Answers, EvidenceTimes } from './ui/evidence-view';
+import { Answers, EvidenceTimes, waiting } from './ui/evidence-view';
+import { attention, byAttention, IDLE_THRESHOLD, tally } from './ui/patrol-attention';
 import { Banner } from './ui/banner';
 import { QuestMeter } from './ui/quest-meter';
 import { TreeScreen, type Dashboard } from './ui/tree-screen';
 import { STATUS_LABELS } from './ui/labels';
 
 export const dynamic = 'force-dynamic';
-
-// "3 verificate · 2 in verifica · 12 disponibili" — zeros omitted, so the line says only what is
-// true of this patrol instead of printing five counters every time.
-function tally(patrol: Dashboard['patrols'][number]) {
-  const count = (...statuses: string[]) =>
-    patrol.skills.filter((entry) => statuses.includes(entry.status)).length;
-  const parts: string[] = [];
-  const add = (n: number, label: string) => {
-    if (n > 0) parts.push(`${n} ${label}`);
-  };
-  add(count('completed'), 'verificate');
-  add(count('pending'), 'in verifica');
-  add(count('rejected'), 'rigettate');
-  add(count('available', 'started'), 'disponibili');
-  add(count('locked'), 'bloccate');
-  return parts.join(' · ');
-}
 
 const ROLES: Record<string, string> = {
   admin: 'amministratore',
@@ -174,49 +158,65 @@ function LeaderView({ data }: { data: Dashboard }) {
             <h3 style={{ marginTop: '2rem' }}>Pattuglie</h3>
             {patrols.length === 0 && <p className="muted">Nessuna pattuglia in questo reparto.</p>}
             <div className="stack">
-              {patrols.map((patrol) => (
-                <article key={patrol.id} className="card">
-                  <div className="card-head">
-                    {/* The two halves of "avanzamento pattuglie" used to be unlinked: the states
+              {/* Ordered by what needs the leader, not by when the patrol happened to be created:
+                  whoever has been waiting longest first, then whoever has gone quietest. A patrol
+                  that has never started anything sorts last — it is new, not neglected. */}
+              {patrols
+                .map((patrol) => ({ patrol, ...attention(patrol, data.evidence, Date.now()) }))
+                .sort(byAttention)
+                .map(({ patrol, waitingSeconds, idleSeconds }) => (
+                  <article key={patrol.id} className="card">
+                    <div className="card-head">
+                      {/* The two halves of "avanzamento pattuglie" used to be unlinked: the states
                         here, the position in the tree on /tree, and the leader bridging them by
                         hand. */}
-                    <h3>
-                      <a href={`/tree?patrol=${encodeURIComponent(patrol.id)}`}>{patrol.name}</a>
-                    </h3>
-                  </div>
-                  {/* The meter carries the count, so the badge that used to repeat it is gone. */}
-                  <QuestMeter
-                    label="Cammino"
-                    value={patrol.completed}
-                    total={patrol.skills.length}
-                  />
-                  {/* A chip per unlocked skill meant a wall of twenty to forty of them, where
+                      <h3>
+                        <a href={`/tree?patrol=${encodeURIComponent(patrol.id)}`}>{patrol.name}</a>
+                      </h3>
+                    </div>
+                    {/* The meter carries the count, so the badge that used to repeat it is gone. */}
+                    <QuestMeter
+                      label="Cammino"
+                      value={patrol.completed}
+                      total={patrol.skills.length}
+                    />
+                    {/* A chip per unlocked skill meant a wall of twenty to forty of them, where
                       "how many are waiting on me?" had to be answered by counting. The tally says
                       it, and only the states a leader can act on keep a chip. */}
-                  <p className="muted" style={{ marginTop: '0.5rem' }}>
-                    {tally(patrol)}
-                  </p>
-                  <div className="row">
-                    {patrol.skills
-                      .filter((entry) => entry.status === 'pending' || entry.status === 'rejected')
-                      .map((entry) => (
-                        <span
-                          key={`${entry.skillId}-${entry.targetId}`}
-                          className="badge"
-                          data-status={entry.status}
-                        >
-                          {titleOf(entry.skillId)}
-                        </span>
-                      ))}
-                  </div>
-                  <p className="muted" style={{ marginTop: '0.5rem' }}>
-                    {people
-                      .filter((p) => p.patrolId === patrol.id)
-                      .map((p) => p.name)
-                      .join(', ') || 'Nessun esploratore assegnato.'}
-                  </p>
-                </article>
-              ))}
+                    <p className="muted" style={{ marginTop: '0.5rem' }}>
+                      {tally(patrol)}
+                    </p>
+                    {waitingSeconds !== undefined ? (
+                      <p className="error">In attesa di verifica {waiting(waitingSeconds)}.</p>
+                    ) : (
+                      idleSeconds !== undefined &&
+                      idleSeconds > IDLE_THRESHOLD && (
+                        <p className="muted">Nessuna attività {waiting(idleSeconds)}.</p>
+                      )
+                    )}
+                    <div className="row">
+                      {patrol.skills
+                        .filter(
+                          (entry) => entry.status === 'pending' || entry.status === 'rejected',
+                        )
+                        .map((entry) => (
+                          <span
+                            key={`${entry.skillId}-${entry.targetId}`}
+                            className="badge"
+                            data-status={entry.status}
+                          >
+                            {titleOf(entry.skillId)}
+                          </span>
+                        ))}
+                    </div>
+                    <p className="muted" style={{ marginTop: '0.5rem' }}>
+                      {people
+                        .filter((p) => p.patrolId === patrol.id)
+                        .map((p) => p.name)
+                        .join(', ') || 'Nessun esploratore assegnato.'}
+                    </p>
+                  </article>
+                ))}
             </div>
 
             <h3 style={{ marginTop: '2rem' }}>Gestione</h3>
