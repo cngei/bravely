@@ -77,6 +77,32 @@ suite('real PostgreSQL persistence and concurrency', () => {
       await control.query(`DROP SCHEMA IF EXISTS ${scratch} CASCADE`);
     }
   });
+  // Regression: this can only fail against a real database. jsonb does not preserve key order, so
+  // a form read back from the catalogue is never textually equal to the same form rebuilt from a
+  // request. Comparing them by serialisation reported every save as an edit, minting a new form id
+  // each time and leaving every submitted proof's questions a revision behind. An in-memory test
+  // cannot see it: there, both sides keep the order they were written in.
+  it('keeps a form id when a save round trips an unchanged form through jsonb', async () => {
+    const before = (await db.readState()).skills.find((k) => k.id === 'initial-1')!;
+    await db.mutate((s) =>
+      execute(s, actor, {
+        type: 'saveSkill',
+        skill: {
+          id: before.id,
+          title: before.title,
+          description: before.description,
+          scope: before.scope,
+          prerequisites: before.prerequisites,
+          public: before.public,
+          // Back to a draft: ids are the domain's to mint, and minting one is the bug's symptom.
+          forms: before.forms.map(({ id: _id, skillId: _skillId, ...draft }) => draft),
+        },
+      }),
+    );
+    const after = (await db.readState()).skills.find((k) => k.id === 'initial-1')!;
+    expect(after.forms.map((f) => f.id)).toEqual(before.forms.map((f) => f.id));
+    expect(after.revision).toBe(before.revision + 1);
+  });
   it('serializes simultaneous duplicate patrol creation', async () => {
     const results = await Promise.allSettled(
       Array.from({ length: 8 }, () =>

@@ -180,9 +180,12 @@ async function sync<T>(
   for (const entity of after) {
     const id = identify(entity);
     const previous = stale.get(id);
-    // Structural compare by serialisation: both sides are built by this file and the reducer, so
-    // key order is stable. Far cheaper than a field-by-field diff, and an UPDATE skipped here is
-    // the difference between touching one row and touching thirty thousand.
+    // Structural compare by serialisation. Sound here, and only here, because both sides come
+    // from the same load(): `before` is a structuredClone of it, so key order matches by
+    // construction. Do not reuse this trick on anything compared against a freshly built object —
+    // jsonb does not preserve key order, and that mistake once made every save mint a new form.
+    // An UPDATE skipped here is the difference between touching one row and touching thirty
+    // thousand.
     if (previous === undefined || JSON.stringify(previous) !== JSON.stringify(entity))
       await upsert(db, table, key, toRow(entity));
     stale.delete(id);

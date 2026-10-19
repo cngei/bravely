@@ -1,5 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import type { Actor, State, Skill, SkillForm, Evidence, Patrol, Upload } from './model';
+import type {
+  Actor,
+  State,
+  Skill,
+  SkillForm,
+  SkillFormDraft,
+  Evidence,
+  Patrol,
+  Upload,
+} from './model';
 import { formId } from './model';
 import type { Command } from './commands';
 import { assert } from './errors';
@@ -108,6 +117,32 @@ export function writable(s: State, a: Actor, skill: Skill, targetId: string) {
     'La prova approvata non può essere modificata.',
   );
   return e;
+}
+// Whether a saved form asks the same thing as the one already on offer, and therefore keeps its
+// id instead of retiring it and minting a new one.
+//
+// Compared field by field on purpose. The obvious JSON.stringify shortcut is wrong here: one side
+// comes from the request, the other was read back from a jsonb column, and jsonb does not preserve
+// key order — Postgres normalises it. Serialising them produced two different strings for
+// identical forms, so every save minted a new form and every proof's questions drifted one
+// revision behind. `?? null` for the same reason on the other axis: an absent limit and an
+// explicit undefined are the same question.
+function sameQuestions(a: SkillForm, b: SkillFormDraft): boolean {
+  return (
+    a.title === b.title &&
+    a.fields.length === b.fields.length &&
+    a.fields.every((x, index) => {
+      const y = b.fields[index];
+      return (
+        x.id === y.id &&
+        x.label === y.label &&
+        x.type === y.type &&
+        x.required === y.required &&
+        (x.minFiles ?? null) === (y.minFiles ?? null) &&
+        (x.maxFiles ?? null) === (y.maxFiles ?? null)
+      );
+    })
+  );
 }
 function validateGraph(skills: Skill[]) {
   assert(
@@ -231,12 +266,7 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
       const retired = new Map<string, SkillForm>();
       const forms = c.skill.forms.map((f) => {
         const previous = old?.forms.find((p) => p.color === f.color);
-        if (
-          previous &&
-          previous.title === f.title &&
-          JSON.stringify(previous.fields) === JSON.stringify(f.fields)
-        )
-          return previous;
+        if (previous && sameQuestions(previous, f)) return previous;
         if (previous) retired.set(previous.id, previous);
         return { ...f, id: formId(c.skill.id, f.color, revision), skillId: c.skill.id };
       });
