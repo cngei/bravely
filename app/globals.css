@@ -220,10 +220,11 @@ strong {
   width: 3.1rem;
 }
 
-.banner-mark img {
-  height: 100%;
-  object-fit: contain;
-  width: 100%;
+/* 231×256 source, so ~3× density at this size. */
+.banner-logo {
+  flex: none;
+  height: 3.6rem;
+  width: auto;
 }
 
 .banner-name {
