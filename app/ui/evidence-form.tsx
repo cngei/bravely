@@ -6,6 +6,8 @@ import { submitEvidenceAction } from '@/app/actions';
 // Matches the byte-sniffed allowlist in lib/files.ts. Advisory only — the server decides.
 const ACCEPT = 'image/png,image/jpeg,image/gif,image/webp,video/mp4,video/webm';
 
+const PATH_NAMES = { blue: 'Blu', amber: 'Ambra' } as const;
+
 // Attachments go to /api/files, not through the Server Action, whose body is capped at 1 MB.
 // The route expects the raw bytes as the body with the metadata in the query string, so a
 // plain multipart <form> would not work here.
@@ -92,16 +94,22 @@ export function EvidenceForm({
             <button
               key={option.color}
               type="button"
+              data-path={option.color}
               data-variant={option.color === color ? undefined : 'ghost'}
+              aria-pressed={option.color === color}
               onClick={() => setColor(option.color)}
             >
-              {option.title}
+              {option.title} · {PATH_NAMES[option.color]}
             </button>
           ))}
         </div>
       )}
-      <fieldset>
-        <legend>{form.title}</legend>
+      {/* Tinted by the path, so the explorer sees which colour the proof will count as before
+          sending it — the same blue or amber the leader later sees on the review card. */}
+      <fieldset data-color={form.color}>
+        <legend>
+          {form.title} · percorso {PATH_NAMES[form.color].toLocaleLowerCase('it')}
+        </legend>
         <div className="stack">
           {form.fields.map((entry) => (
             <div key={entry.id}>

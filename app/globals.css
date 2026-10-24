@@ -30,7 +30,6 @@
   --amber-soft: #f2dfb3;
   --red: #8e2219;
   --red-soft: #f0d8cd;
-  --wax: #a62b20;
 
   --ink: #382a1c;
   --muted: #6b5942;
@@ -59,8 +58,9 @@
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.3'/%3E%3C/svg%3E");
   /* Gold lozenge, repeated at the four corners of every framed panel. */
   --corner: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9'%3E%3Cpath d='M4.5 0 9 4.5 4.5 9 0 4.5Z' fill='%23b8912f'/%3E%3C/svg%3E");
-  /* Wax seal, used as a watermark on approved documents — never as the only sign of approval. */
-  --seal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='47' fill='%23a62b20'/%3E%3Ccircle cx='50' cy='50' r='37' fill='none' stroke='%23f0e5cc' stroke-width='3' stroke-dasharray='6 5'/%3E%3Cpath d='M50 24 57 43 77 43 61 55 67 74 50 62 33 74 39 55 23 43 43 43Z' fill='%23f0e5cc'/%3E%3C/svg%3E");
+  /* Approval seal, used as a watermark on approved documents — never as the only sign of approval.
+     Green with a check, matching the completed pip on the tree: red read as rejection. */
+  --seal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='47' fill='%2328583a'/%3E%3Ccircle cx='50' cy='50' r='37' fill='none' stroke='%23f0e5cc' stroke-width='3' stroke-dasharray='6 5'/%3E%3Cpath d='M32 51 45 64 69 38' fill='none' stroke='%23f0e5cc' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   /* Compass rose, pinned to the corner of the skill map. */
   --compass: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23382a1c' stroke-width='1.6' opacity='0.45'%3E%3Ccircle cx='50' cy='50' r='40'/%3E%3Ccircle cx='50' cy='50' r='31'/%3E%3C/g%3E%3Cg fill='%23382a1c'%3E%3Cpath d='M50 6 57 50 50 94 43 50Z' opacity='0.5'/%3E%3Cpath d='M6 50 50 43 94 50 50 57Z' opacity='0.3'/%3E%3C/g%3E%3C/svg%3E");
 
@@ -672,6 +672,46 @@ button[data-variant='ghost']:hover:not(:disabled),
   background: linear-gradient(var(--vellum), #f3ebd6);
 }
 
+/* Path tabs: the selected one is filled with its path's hue, the other is outlined in it, so the
+   two choices read as blue and amber rather than as two identical green buttons. */
+button[data-path='blue'] {
+  background: linear-gradient(#22637f, var(--blue));
+  border-color: #143f53;
+}
+
+button[data-path='amber'] {
+  background: linear-gradient(#a35f09, var(--amber));
+  border-color: #6f4105;
+}
+
+button[data-path='blue']:hover:not(:disabled) {
+  background: linear-gradient(#2a7392, #1f6080);
+}
+
+button[data-path='amber']:hover:not(:disabled) {
+  background: linear-gradient(#b56a0b, #9a5a08);
+}
+
+button[data-path='blue'][data-variant='ghost'] {
+  background: linear-gradient(#fdf9ee, var(--blue-soft));
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+button[data-path='amber'][data-variant='ghost'] {
+  background: linear-gradient(#fdf9ee, var(--amber-soft));
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+button[data-path='blue'][data-variant='ghost']:hover:not(:disabled) {
+  background: var(--blue-soft);
+}
+
+button[data-path='amber'][data-variant='ghost']:hover:not(:disabled) {
+  background: var(--amber-soft);
+}
+
 button[data-variant='danger'] {
   background: linear-gradient(#fdf9ee, var(--vellum));
   border-color: var(--red);
@@ -755,6 +795,24 @@ legend {
   font-weight: 700;
   letter-spacing: 0.1em;
   padding: 0 0.45rem;
+}
+
+fieldset[data-color='blue'] {
+  background: var(--blue-soft);
+  border-color: #a9c4ce;
+}
+
+fieldset[data-color='amber'] {
+  background: var(--amber-soft);
+  border-color: #d8ba80;
+}
+
+fieldset[data-color='blue'] legend {
+  color: var(--blue);
+}
+
+fieldset[data-color='amber'] legend {
+  color: var(--amber);
 }
 
 dl {
@@ -1083,9 +1141,9 @@ table.data tr:last-child td {
   background: #7a6a52;
 }
 
-/* Completed is a blob of sealing wax: lit from the top-left, domed, slightly proud of the rim. */
+/* Completed is a domed green enamel stud: lit from the top-left, slightly proud of the rim. */
 .skill-pip[data-pip='completed'] {
-  background: radial-gradient(circle at 34% 28%, #c4453a, var(--wax) 62%, #7d2019);
+  background: radial-gradient(circle at 34% 28%, #4a8a5f, var(--green) 62%, #173322);
   box-shadow:
     inset 0 -1px 2px rgb(0 0 0 / 25%),
     0 1px 2px rgb(56 42 28 / 35%);
