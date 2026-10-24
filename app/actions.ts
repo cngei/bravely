@@ -10,7 +10,7 @@ import { mutate } from '@/lib/db';
 import { execute } from '@/lib/domain';
 import { commandSchema, needsGlobalLock } from '@/lib/commands';
 import { AppError } from '@/lib/errors';
-import type { Achievement, Skill, SkillFormDraft, State } from '@/lib/model';
+import type { Achievement, Skill, SkillDraft, SkillFormDraft, State } from '@/lib/model';
 
 // `ok` exists so a form can tell a successful save from its own initial state: useActionState
 // starts at {}, and without the flag "saved" and "never submitted" look identical.
@@ -110,10 +110,15 @@ export async function submitEvidenceAction(input: {
 // are safe even though they are reachable as plain POSTs.
 // ---------------------------------------------------------------------------
 
-// `revision` is assigned by the server and rejected by the schema, so it is dropped here.
-const asPayload = (skill: Skill) => {
-  const { revision: _assignedByServer, ...payload } = skill;
-  return payload;
+// `revision` and the form ids are assigned by the server and rejected by the strict schema, so
+// they are dropped here. Dropping the form ids loses nothing: saveSkill gives an unchanged form
+// back its previous id, so proofs that answered it stay attached.
+const asPayload = (skill: Skill): SkillDraft => {
+  const { revision: _assignedByServer, forms, ...payload } = skill;
+  return {
+    ...payload,
+    forms: forms.map(({ id: _formId, skillId: _skillId, ...form }) => form),
+  };
 };
 
 const requireSkill = (state: State, skillId: string): Skill => {
