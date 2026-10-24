@@ -3,7 +3,7 @@
 // React Flow only pans, zooms and draws the edges, so layout() and its tests stay untouched.
 // Handles are rendered but invisible: step 3 of the plan makes them connectable for the
 // admin editor, and edges need them to anchor even in read-only mode.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Controls,
   Handle,
@@ -124,7 +124,7 @@ function SkillNode({ data }: NodeProps<Node<SkillData>>) {
         title={`${data.title} — ${label}`}
         aria-label={`${data.title}, ${label}`}
       >
-        <span className="skill-emblem" data-status={data.status}>
+        <span className="skill-emblem" data-status={data.status} data-color={data.color}>
           <span className="skill-glyph">{initials(data.title)}</span>
           <Pip status={data.status} color={data.color} />
         </span>
@@ -143,7 +143,16 @@ const nodeTypes = { skill: SkillNode };
 
 export function SkillGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEdge[] }) {
   const [openId, setOpenId] = useState<string>();
+  const [notice, setNotice] = useState<string>();
   const open = nodes.find((node) => node.id === openId);
+
+  // The sheet closes on a successful submission, so the confirmation lands on the tree instead —
+  // transient, like the editor's, since there is no form left to anchor it to.
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(undefined), 4000);
+    return () => clearTimeout(timer);
+  }, [notice]);
   const sheet: SheetSkill | null = open
     ? {
         id: open.id,
@@ -214,7 +223,16 @@ export function SkillGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
         <TreeScenery />
         <Controls showInteractive={false} />
       </ReactFlow>
-      <SkillSheet skill={sheet} onClose={() => setOpenId(undefined)} />
+      <SkillSheet
+        skill={sheet}
+        onClose={() => setOpenId(undefined)}
+        onSubmitted={(title) => setNotice(`«${title}» inviata: ora è in attesa di verifica.`)}
+      />
+      {/* Always mounted and never display:none, so screen readers announce the text when it
+          appears; when empty it is merely invisible. */}
+      <p className="tree-notice" role="status">
+        {notice}
+      </p>
     </div>
   );
 }

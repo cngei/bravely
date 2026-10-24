@@ -97,11 +97,18 @@ export default async function SkillDetailPage({
         )}
         <div className="stack">
           {detail.documentation.map((document) => (
-            <article key={document.id} className="card" data-status={document.status}>
+            <article
+              key={document.id}
+              className="card"
+              data-status={document.status}
+              data-color={document.status === 'pending' ? document.form?.color : undefined}
+            >
               <div className="card-head">
                 <h3>{STATUS_LABELS[document.status] ?? document.status}</h3>
                 {document.form?.color && (
-                  <span className="badge">{document.form.color === 'amber' ? 'Ambra' : 'Blu'}</span>
+                  <span className="badge" data-color={document.form.color}>
+                    {document.form.color === 'amber' ? 'Ambra' : 'Blu'}
+                  </span>
                 )}
               </div>
               <EvidenceTimes evidence={document} />

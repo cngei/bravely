@@ -28,6 +28,7 @@ export function EvidenceForm({
   forms,
   disabled,
   disabledReason,
+  onSubmitted,
 }: {
   skillId: string;
   targetId: string;
@@ -35,9 +36,12 @@ export function EvidenceForm({
   /** Consultation mode: the questions are readable, submission is not possible. */
   disabled?: boolean;
   disabledReason?: string;
+  /** Takes over the confirmation, e.g. a sheet that closes and confirms on the page behind it. */
+  onSubmitted?: () => void;
 }) {
   const [color, setColor] = useState(forms[0].color);
   const [error, setError] = useState<string>();
+  const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const form = forms.find((f) => f.color === color) ?? forms[0];
 
@@ -45,8 +49,10 @@ export function EvidenceForm({
     event.preventDefault();
     // Defence in depth: the button is disabled, but a stray Enter must not submit either.
     if (disabled) return;
-    const data = new FormData(event.currentTarget);
+    const element = event.currentTarget;
+    const data = new FormData(element);
     setError(undefined);
+    setSent(false);
     setBusy(true);
     try {
       const answers: Record<string, string | string[]> = {};
@@ -63,8 +69,14 @@ export function EvidenceForm({
           answers[entry.id] = await upload(skillId, targetId, files);
       }
       const result = await submitEvidenceAction({ skillId, targetId, color, answers });
-      // On success the action calls refresh(), so this card re-renders as "pending".
+      // On success the action calls refresh(), so this card re-renders as "pending". The refresh
+      // alone was easy to miss, so success is also confirmed explicitly.
       if (result.error) setError(result.error);
+      else if (onSubmitted) onSubmitted();
+      else {
+        element.reset();
+        setSent(true);
+      }
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Invio non riuscito.');
     } finally {
@@ -133,6 +145,11 @@ export function EvidenceForm({
         {disabled && disabledReason && <span className="muted">{disabledReason}</span>}
       </div>
       {error && <p className="error">{error}</p>}
+      {sent && (
+        <p className="ok" role="status">
+          Prova inviata: ora è in attesa di verifica.
+        </p>
+      )}
     </form>
   );
 }

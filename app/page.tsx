@@ -71,13 +71,21 @@ function LeaderView({ data }: { data: Dashboard }) {
 
   // One proof, rendered the same whether it is waiting or already settled.
   const card = (evidence: (typeof reviewable)[number]) => (
-    <article key={evidence.id} className="card" data-status={evidence.status}>
+    <article
+      key={evidence.id}
+      className="card"
+      data-status={evidence.status}
+      // Only a waiting proof is tinted by its path; settled ones keep the green or red of the verdict.
+      data-color={evidence.status === 'pending' ? evidence.form?.color : undefined}
+    >
       <div className="card-head">
         <h3>
           {titleOf(evidence.skillId)} · {nameOf(evidence.targetId, evidence.targetType)}
         </h3>
         <span className="row">
-          <span className="badge">{evidence.form?.color === 'amber' ? 'Ambra' : 'Blu'}</span>
+          <span className="badge" data-color={evidence.form?.color}>
+            {evidence.form?.color === 'amber' ? 'Ambra' : 'Blu'}
+          </span>
           <span className="badge" data-status={evidence.status}>
             {STATUS_LABELS[evidence.status] ?? evidence.status}
           </span>

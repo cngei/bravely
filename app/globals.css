@@ -297,6 +297,33 @@ strong {
   margin: 0.5rem 0 0;
 }
 
+/* Confirmation floated over the skill map, above React Flow's panes and controls. */
+.tree-notice {
+  background: linear-gradient(#2f6341, var(--green));
+  border: 1px solid var(--green-ink);
+  border-radius: var(--pill);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 20%),
+    0 4px 14px rgb(56 42 28 / 25%);
+  color: #fdf8ea;
+  font-size: 0.9rem;
+  font-weight: 600;
+  left: 50%;
+  margin: 0;
+  max-width: calc(100% - 2rem);
+  padding: 0.5rem 1.1rem;
+  position: absolute;
+  text-align: center;
+  top: 0.9rem;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.tree-notice:empty {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .stack {
   display: grid;
   /* minmax(0, 1fr), not 1fr: a grid track defaults to min-content, so one wide child — a file
@@ -359,9 +386,10 @@ strong {
 
 /* State is carried by a tinted surface rather than a hard edge: a 4px border is exactly the kind
    of explicit corner this design avoids. */
+/* Pending carries no hue of its own: blue and amber belong to the form paths, so a waiting proof
+   is tinted by the path it was submitted with (the [data-color] rules below), not by its state. */
 .card[data-status='pending'] {
-  background-color: var(--amber-soft);
-  border-color: #d8ba80;
+  border-color: var(--ink);
 }
 
 /* The seal is a watermark, not a badge: text flows over it, so it can never collide with the
@@ -389,6 +417,19 @@ strong {
 .card[data-color='amber'] {
   background-color: var(--amber-soft);
   border-color: #d8ba80;
+}
+
+/* Path chip: the hue repeated in ink on its own tint, next to the card's status badge. */
+.badge[data-color='blue'] {
+  background: var(--blue-soft);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.badge[data-color='amber'] {
+  background: var(--amber-soft);
+  border-color: var(--amber);
+  color: var(--amber);
 }
 
 /* ---------- progress ---------- */
@@ -463,9 +504,11 @@ strong {
   color: #fdf8ea;
 }
 
+/* Status badges stay off blue and amber, which belong to the two form paths. Pending is filled
+   ink so it still stands out on a leader's review list; open skills are a plain inked outline. */
 .badge[data-status='pending'] {
-  background: linear-gradient(#a35f09, var(--amber));
-  border-color: #6f4105;
+  background: linear-gradient(#5a4632, var(--ink));
+  border-color: #241a10;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%);
   color: #fdf8ea;
 }
@@ -479,10 +522,8 @@ strong {
 
 .badge[data-status='available'],
 .badge[data-status='started'] {
-  background: linear-gradient(#22637f, var(--blue));
-  border-color: #143f53;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%);
-  color: #fdf8ea;
+  border-color: var(--ink);
+  color: var(--ink);
 }
 
 /* Achievements are rank ribbons: chevroned at both ends, which no border can follow, so the shape
@@ -965,7 +1006,19 @@ table.data tr:last-child td {
   color: var(--green-ink);
 }
 
+/* Blue and amber mean the form path and nothing else: an open or started skill has no path yet
+   and stays in neutral ink, a pending one takes the colour of the form it was submitted with. */
 .skill-emblem[data-status='pending'] {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.skill-emblem[data-status='pending'][data-color='blue'] {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.skill-emblem[data-status='pending'][data-color='amber'] {
   border-color: var(--amber);
   color: var(--amber);
 }
@@ -977,8 +1030,8 @@ table.data tr:last-child td {
 
 .skill-emblem[data-status='available'],
 .skill-emblem[data-status='started'] {
-  border-color: var(--blue);
-  color: var(--blue);
+  border-color: var(--ink);
+  color: var(--ink);
 }
 
 /* Locked reads as mystery: the emblem is desaturated and softened while the title below stays

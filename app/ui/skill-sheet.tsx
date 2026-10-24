@@ -36,7 +36,16 @@ export interface SheetSkill {
   waitingSeconds?: number;
 }
 
-export function SkillSheet({ skill, onClose }: { skill: SheetSkill | null; onClose: () => void }) {
+export function SkillSheet({
+  skill,
+  onClose,
+  onSubmitted,
+}: {
+  skill: SheetSkill | null;
+  onClose: () => void;
+  /** After a successful submission; the sheet closes, so the parent owns the confirmation. */
+  onSubmitted: (title: string) => void;
+}) {
   const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -58,12 +67,29 @@ export function SkillSheet({ skill, onClose }: { skill: SheetSkill | null; onClo
         if (event.target === dialog.current) onClose();
       }}
     >
-      {skill && <Body skill={skill} onClose={onClose} />}
+      {skill && (
+        <Body
+          skill={skill}
+          onClose={onClose}
+          onSubmitted={() => {
+            onSubmitted(skill.title);
+            onClose();
+          }}
+        />
+      )}
     </dialog>
   );
 }
 
-function Body({ skill, onClose }: { skill: SheetSkill; onClose: () => void }) {
+function Body({
+  skill,
+  onClose,
+  onSubmitted,
+}: {
+  skill: SheetSkill;
+  onClose: () => void;
+  onSubmitted: () => void;
+}) {
   // Without a target there is nothing to submit against, so the forms can only be described.
   const submittable = skill.canSubmit && skill.targetId !== undefined;
   // Gated on the prerequisites, not on status === 'locked' — same reasoning as SkillCard: a proof
@@ -80,7 +106,7 @@ function Body({ skill, onClose }: { skill: SheetSkill; onClose: () => void }) {
   return (
     <div className="sheet-body">
       <div className="sheet-head">
-        <span className="skill-emblem" data-status={skill.status}>
+        <span className="skill-emblem" data-status={skill.status} data-color={skill.color}>
           <span className="skill-glyph">{skill.glyph}</span>
         </span>
         <div>
@@ -127,6 +153,7 @@ function Body({ skill, onClose }: { skill: SheetSkill; onClose: () => void }) {
             forms={skill.forms}
             disabled={!interactive}
             disabledReason={why}
+            onSubmitted={onSubmitted}
           />
         </>
       )}
