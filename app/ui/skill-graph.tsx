@@ -117,7 +117,7 @@ function SkillNode({ data }: NodeProps<Node<SkillData>>) {
       : 'Pattuglia';
   return (
     <>
-      <Handle type="target" position={Position.Top} className="tree-handle" />
+      <Handle type="target" position={Position.Bottom} className="tree-handle" />
       <div
         className="skill-node"
         data-status={data.status}
@@ -133,7 +133,7 @@ function SkillNode({ data }: NodeProps<Node<SkillData>>) {
           {data.description && <span className="skill-desc">{data.description}</span>}
         </span>
       </div>
-      <Handle type="source" position={Position.Bottom} className="tree-handle" />
+      <Handle type="source" position={Position.Top} className="tree-handle" />
     </>
   );
 }

@@ -34,8 +34,9 @@ export function layout(skills: Skill[]): Tree {
   const byId = new Map(skills.map((skill) => [skill.id, skill]));
   const depths = new Map<string, number>();
 
-  // Troop skills are the roots. A patrol skill sits one level below its deepest prerequisite,
-  // so one with no explicit prerequisites still lands on level 1, under the two initials.
+  // Troop skills are the roots — the trunk. A patrol skill sits one level past its deepest
+  // prerequisite, so one with no explicit prerequisites still lands on level 1, right after the
+  // two initials. Depth counts from the trunk; which way it grows on screen is decided below.
   const depthOf = (id: string): number => {
     const cached = depths.get(id);
     if (cached !== undefined) return cached;
@@ -62,6 +63,9 @@ export function layout(skills: Skill[]): Tree {
   const width = widest * NODE.w + (widest - 1) * NODE.gapX;
   const height = layers.length * NODE.h + (layers.length - 1) * NODE.gapY;
 
+  // The tree grows upwards: the trunk (depth 0) sits on the bottom row and every later skill
+  // above its prerequisites. Only the projection is flipped — depths, ordering and edges are the
+  // same graph — which is why the scenery, already anchored to the bottom, meets the trunk.
   const nodes: TreeNode[] = [];
   layers.forEach((layer, depth) => {
     const rowWidth = layer.length * NODE.w + (layer.length - 1) * NODE.gapX;
@@ -71,7 +75,7 @@ export function layout(skills: Skill[]): Tree {
         skill,
         depth,
         x: offset + index * (NODE.w + NODE.gapX),
-        y: depth * (NODE.h + NODE.gapY),
+        y: (layers.length - 1 - depth) * (NODE.h + NODE.gapY),
       });
     });
   });
@@ -82,10 +86,11 @@ export function layout(skills: Skill[]): Tree {
     const a = placed.get(from);
     const b = placed.get(to);
     if (!a || !b) return;
+    // Out of the prerequisite's top edge, into the dependant's bottom edge.
     const sx = a.x + NODE.w / 2;
-    const sy = a.y + NODE.h;
+    const sy = a.y;
     const tx = b.x + NODE.w / 2;
-    const ty = b.y;
+    const ty = b.y + NODE.h;
     const mid = (sy + ty) / 2;
     edges.push({
       id: `${from}->${to}`,

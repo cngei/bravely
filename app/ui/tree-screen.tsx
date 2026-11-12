@@ -121,7 +121,7 @@ export function TreeScreen({
 
       <p className="muted">
         Le linee tratteggiate sono il requisito implicito: ogni skill di pattuglia richiede entrambe
-        le skill iniziali di reparto, anche senza indicarle. Le skill più in basso lo ereditano dai
+        le skill iniziali di reparto, anche senza indicarle. Le skill più in alto lo ereditano dai
         propri prerequisiti.
       </p>
 

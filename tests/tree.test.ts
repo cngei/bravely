@@ -25,10 +25,12 @@ const skill = (
   revision: 1,
 });
 
-// initial-1 initial-2        depth 0
-//     a        b             depth 1  (b explicitly requires initial-1)
-//         c                  depth 2  (requires a and b)
+// Drawn as it appears on screen — the trunk at the bottom, growing upwards:
+//
 //         d                  depth 3  (requires c)
+//         c                  depth 2  (requires a and b)
+//     a        b             depth 1  (b explicitly requires initial-1)
+// initial-1 initial-2        depth 0
 const graph = [
   skill('initial-1', 'troop'),
   skill('initial-2', 'troop'),
@@ -50,7 +52,7 @@ describe('skill tree layout', () => {
     expect(depthOf('b')).toBe(1);
   });
 
-  it('places a skill below its deepest prerequisite, transitively', () => {
+  it('places a skill one level past its deepest prerequisite, transitively', () => {
     expect(depthOf('c')).toBe(2);
     expect(depthOf('d')).toBe(3);
   });
@@ -99,6 +101,35 @@ describe('skill tree layout', () => {
     const tree = layout(graph);
     const lonely = tree.nodes.find((n) => n.skill.id === 'd');
     expect(lonely?.x).toBe((tree.width - NODE.w) / 2);
+  });
+
+  it('puts the trunk on the bottom row and grows each level upwards', () => {
+    const tree = layout(graph);
+    const y = (id: string) => tree.nodes.find((n) => n.skill.id === id)!.y;
+    const row = NODE.h + NODE.gapY;
+    // Bottom row: its lower edge is the canvas floor.
+    expect(y('initial-1')).toBe(3 * row);
+    expect(y('initial-1') + NODE.h).toBe(tree.height);
+    expect(y('initial-2')).toBe(y('initial-1'));
+    expect(y('a')).toBe(2 * row);
+    expect(y('c')).toBe(row);
+    // The deepest skill is the crown, at the top.
+    expect(y('d')).toBe(0);
+  });
+
+  it('runs every edge from the top of the prerequisite to the bottom of the dependant', () => {
+    const tree = layout(graph);
+    const at = (id: string) => tree.nodes.find((n) => n.skill.id === id)!;
+    for (const e of tree.edges) {
+      const from = at(e.from);
+      const to = at(e.to);
+      const start = `M${from.x + NODE.w / 2} ${from.y}`;
+      const end = `${to.x + NODE.w / 2} ${to.y + NODE.h}`;
+      expect(e.path.startsWith(`${start} `)).toBe(true);
+      expect(e.path.endsWith(end)).toBe(true);
+      // So the arrowhead, which sits at the end, points up at the dependant.
+      expect(to.y + NODE.h).toBeLessThan(from.y);
+    }
   });
 
   it('survives an empty catalogue', () => {

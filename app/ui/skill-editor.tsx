@@ -54,7 +54,7 @@ function EditorNode({ data, selected }: NodeProps<Node<EditorData>>) {
   return (
     <>
       {/* Troop skills may not have prerequisites, so they expose no target handle. */}
-      {data.scope === 'patrol' && <Handle type="target" position={Position.Top} />}
+      {data.scope === 'patrol' && <Handle type="target" position={Position.Bottom} />}
       <div className="editor-node" data-scope={data.scope} data-selected={selected || undefined}>
         <span className="editor-node-title">{data.title}</span>
         <span className="editor-node-id">{data.id}</span>
@@ -63,7 +63,7 @@ function EditorNode({ data, selected }: NodeProps<Node<EditorData>>) {
           {data.isPublic ? ' · allegati pubblici' : ''}
         </span>
       </div>
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={Position.Top} />
     </>
   );
 }
@@ -170,7 +170,7 @@ export function SkillEditor({ skills, edges }: { skills: EditorSkill[]; edges: E
           </ReactFlow>
         </div>
         <p className="muted">
-          Trascina da un pallino inferiore a quello superiore di un’altra skill per aggiungere un
+          Trascina da un pallino superiore a quello inferiore di un’altra skill per aggiungere un
           prerequisito, oppure usa il pannello. I prerequisiti si rimuovono dal pannello. Le linee
           tratteggiate sono il requisito implicito delle due skill iniziali: non si modificano.
         </p>
