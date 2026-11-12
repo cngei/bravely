@@ -264,11 +264,13 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
       // gets a fresh id and the previous version is retired — still readable through
       // Evidence.formId, never offered to a patrol again.
       const retired = new Map<string, SkillForm>();
-      const forms = c.skill.forms.map((f) => {
+      const forms = c.skill.forms.map((f, i) => {
         const previous = old?.forms.find((p) => p.color === f.color);
         if (previous && sameQuestions(previous, f)) return previous;
         if (previous) retired.set(previous.id, previous);
-        return { ...f, id: formId(c.skill.id, f.color, revision), skillId: c.skill.id };
+        // Position among the forms of this colour; always 0 while there is one form per colour.
+        const index = c.skill.forms.slice(0, i).filter((p) => p.color === f.color).length;
+        return { ...f, id: formId(c.skill.id, f.color, revision, index), skillId: c.skill.id };
       });
       // A colour dropped from the catalogue entirely: its form still has proofs pointing at it.
       for (const p of old?.forms ?? []) if (!forms.some((f) => f.id === p.id)) retired.set(p.id, p);

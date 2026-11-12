@@ -16,6 +16,9 @@ export interface Person {
   name: string;
   troopId: string;
   patrolId?: string;
+  /** Joined a patrol on their own. Effective at once, but a leader still has to confirm it;
+      confirming or reassigning clears it. Absent rather than false, like every optional here. */
+  selfAssigned?: boolean;
 }
 export interface ExternalUser {
   subject: string;
@@ -63,6 +66,14 @@ export interface Skill {
   forms: SkillForm[];
   public: boolean;
   revision: number;
+  /** Explanatory PDF, bytes in `files`. Server-assigned: saveSkill must carry it forward, because
+      the admin form never sends it back. */
+  document?: SkillDocument;
+}
+export interface SkillDocument {
+  id: string;
+  name: string;
+  size: number;
 }
 export interface Evidence {
   id: string;
@@ -81,6 +92,12 @@ export interface Evidence {
   reason?: string;
   reviewedAt?: string;
   reviewedBy?: string;
+  /** Free text from the patrol to the reviewer, outside the form's questions. */
+  comment?: string;
+  /** The second, explicit pass that opens approved documentation to other patrols. Only
+      meaningful on a public skill. */
+  publishedAt?: string;
+  publishedBy?: string;
 }
 // history[] is deliberately gone. It was append-only, never read by any rule, and duplicated
 // what the columns above already say: who submitted, who decided, when, and why. All it added
@@ -115,10 +132,17 @@ export interface State {
   uploads: Upload[];
   achievements: Achievement[];
 }
-// Form ids follow <skill>:<colour>:r<revision>, the same scheme the migrations used, so the next
-// edit of a form naturally lands on a new id rather than overwriting the one proofs point at.
-export const formId = (skillId: string, color: 'blue' | 'amber', revision: number) =>
-  `${skillId}:${color}:r${revision}`;
+// Form ids follow <skill>:<colour>:r<revision>:<index>, so the next edit of a form naturally lands
+// on a new id rather than overwriting the one proofs point at. The index is the form's position
+// among those of its colour: without it two blue forms minted in the same revision would collide
+// on the primary key of `forms`. Ids minted before the index existed (<skill>:<colour>:r<n>) stay
+// as they are — they are only ever looked up, never reconstructed.
+export const formId = (
+  skillId: string,
+  color: 'blue' | 'amber',
+  revision: number,
+  index: number,
+) => `${skillId}:${color}:r${revision}:${index}`;
 /** Diff base for a first write: everything in a State, empty. */
 export const emptyState = (): State => ({
   troops: [],
@@ -133,7 +157,7 @@ export const emptyState = (): State => ({
 });
 export function initialState(): State {
   const form = (skillId: string): SkillForm => ({
-    id: formId(skillId, 'blue', 1),
+    id: formId(skillId, 'blue', 1, 0),
     skillId,
     color: 'blue',
     title: 'Documentazione di reparto',

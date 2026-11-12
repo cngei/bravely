@@ -14,6 +14,7 @@ import type {
   Patrol,
   Person,
   Skill,
+  SkillDocument,
   SkillForm,
   State,
   Troop,
@@ -50,6 +51,7 @@ type SkillRow = {
   public: boolean;
   revision: number;
   form_ids: string[];
+  document: SkillDocument | null;
 };
 
 export async function load(db: Db): Promise<State> {
@@ -63,7 +65,8 @@ export async function load(db: Db): Promise<State> {
     troop_id: string;
     patrol_id: string | null;
     name: string;
-  }>(db, 'SELECT id, troop_id, patrol_id, name FROM people ORDER BY id');
+    self_assigned: boolean;
+  }>(db, 'SELECT id, troop_id, patrol_id, name, self_assigned FROM people ORDER BY id');
   const externalRows = await select<{
     subject: string;
     name: string;
@@ -72,7 +75,7 @@ export async function load(db: Db): Promise<State> {
   }>(db, 'SELECT subject, name, role, troop_ids FROM external_users ORDER BY subject');
   const skillRows = await select<SkillRow>(
     db,
-    'SELECT id, title, description, scope, prerequisites, public, revision, form_ids FROM skills ORDER BY id',
+    'SELECT id, title, description, scope, prerequisites, public, revision, form_ids, document FROM skills ORDER BY id',
   );
   const formRows = await select<FormRow>(
     db,
@@ -81,7 +84,8 @@ export async function load(db: Db): Promise<State> {
   const evidenceRows = await select<Record<string, unknown>>(
     db,
     `SELECT id, skill_id, form_id, target_id, target_type, status, answers,
-            started_at, submitted_at, submitted_by, reviewed_at, reviewed_by, reason
+            started_at, submitted_at, submitted_by, reviewed_at, reviewed_by, reason,
+            comment, published_at, published_by
      FROM evidence ORDER BY id`,
   );
   const uploadRows = await select<Record<string, unknown>>(
@@ -112,6 +116,8 @@ export async function load(db: Db): Promise<State> {
       name: r.name,
       troopId: r.troop_id,
       patrolId: r.patrol_id ?? undefined,
+      // false is the column default for everyone who never self-assigned; the domain says absent.
+      ...(r.self_assigned ? { selfAssigned: true } : {}),
     })),
     externalUsers: externalRows.map((r) => ({
       subject: r.subject,
@@ -128,6 +134,7 @@ export async function load(db: Db): Promise<State> {
       public: r.public,
       revision: r.revision,
       forms: r.form_ids.map((id) => forms.get(id)).filter((f): f is SkillForm => f !== undefined),
+      document: r.document ?? undefined,
     })),
     retiredForms: [...forms.values()].filter((f) => !current.has(f.id)),
     evidence: evidenceRows.map((r) => ({
@@ -144,6 +151,9 @@ export async function load(db: Db): Promise<State> {
       reviewedAt: iso(r.reviewed_at),
       reviewedBy: maybe(r.reviewed_by),
       reason: maybe(r.reason),
+      comment: maybe(r.comment),
+      publishedAt: iso(r.published_at),
+      publishedBy: maybe(r.published_by),
     })),
     uploads: uploadRows.map((r) => ({
       id: r.id as string,
@@ -234,7 +244,13 @@ export async function save(db: Db, before: State, after: State) {
     'people',
     'id',
     (p) => p.id,
-    (p) => ({ id: p.id, troop_id: p.troopId, patrol_id: p.patrolId ?? null, name: p.name }),
+    (p) => ({
+      id: p.id,
+      troop_id: p.troopId,
+      patrol_id: p.patrolId ?? null,
+      name: p.name,
+      self_assigned: p.selfAssigned ?? false,
+    }),
     before.people,
     after.people,
   );
@@ -261,6 +277,7 @@ export async function save(db: Db, before: State, after: State) {
       public: k.public,
       revision: k.revision,
       form_ids: json(k.forms.map((f) => f.id)),
+      document: k.document === undefined ? null : json(k.document),
     }),
     before.skills,
     after.skills,
@@ -298,6 +315,9 @@ export async function save(db: Db, before: State, after: State) {
       reviewed_at: e.reviewedAt ?? null,
       reviewed_by: e.reviewedBy ?? null,
       reason: e.reason ?? null,
+      comment: e.comment ?? null,
+      published_at: e.publishedAt ?? null,
+      published_by: e.publishedBy ?? null,
     }),
     before.evidence,
     after.evidence,

@@ -85,7 +85,8 @@ suite('real PostgreSQL persistence and concurrency', () => {
         patrols: [{ id: 'p1', name: 'Lupi', troopId: 't1' }],
         people: [
           // One assigned and one not: the unassigned one is the null/undefined boundary.
-          { id: 'u1', name: 'Con pattuglia', troopId: 't1', patrolId: 'p1' },
+          // Self-assigned: the boolean column whose false default must read back as absent.
+          { id: 'u1', name: 'Con pattuglia', troopId: 't1', patrolId: 'p1', selfAssigned: true },
           { id: 'u2', name: 'Senza pattuglia', troopId: 't1' },
         ],
         externalUsers: [{ subject: 's1', name: 'Esterno', role: 'leader', troopIds: ['t2'] }],
@@ -98,6 +99,7 @@ suite('real PostgreSQL persistence and concurrency', () => {
             prerequisites: [],
             public: true,
             revision: 3,
+            document: { id: randomUUID(), name: 'spiegazione.pdf', size: 123456 },
             forms: [
               { id: 'k1:blue:r3', skillId: 'k1', color: 'blue', title: 'Blu', fields: [field] },
               { id: 'k1:amber:r3', skillId: 'k1', color: 'amber', title: 'Ambra', fields: [media] },
@@ -140,6 +142,7 @@ suite('real PostgreSQL persistence and concurrency', () => {
             submittedAt: '2026-01-03T10:30:00.000Z',
             submittedBy: 'u1',
             answers: { testo: 'Ecco com’è andata', media: [fileId] },
+            comment: 'Abbiamo fatto la prova sotto la pioggia',
             status: 'pending',
           },
           // Points at a retired form, which is the whole reason retiredForms exists.
@@ -157,6 +160,10 @@ suite('real PostgreSQL persistence and concurrency', () => {
             reason: 'Da rifare',
             reviewedAt: '2026-01-06T08:15:00.000Z',
             reviewedBy: 'a',
+            // Not a state the domain would produce on a rejected proof; the repo does not judge,
+            // and the point here is only that both columns survive the trip.
+            publishedAt: '2026-01-07T09:00:00.000Z',
+            publishedBy: 'a',
           },
         ],
         uploads: [
