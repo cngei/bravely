@@ -67,6 +67,8 @@ export const commandSchema = z.discriminatedUnion('type', [
           several forms of the same colour, and the colour is only a label. */
       formId: id,
       answers: z.record(z.string(), z.union([z.string().max(20000), z.array(z.string()).max(10)])),
+      /** Free text for the reviewer, outside the form's questions. Optional. */
+      comment: z.string().trim().max(5000).optional(),
     })
     .strict(),
   z

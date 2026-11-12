@@ -7,6 +7,8 @@ import { submitEvidenceAction } from '@/app/actions';
 const ACCEPT = 'image/png,image/jpeg,image/gif,image/webp,video/mp4,video/webm';
 
 const PATH_NAMES = { blue: 'Blu', amber: 'Ambra' } as const;
+// Field ids are slugs of [a-z0-9-] (form-builder.tsx), so an underscore can never collide with one.
+const COMMENT = '_comment';
 
 // Attachments go to /api/files, not through the Server Action, whose body is capped at 1 MB.
 // The route expects the raw bytes as the body with the metadata in the query string, so a
@@ -70,11 +72,13 @@ export function EvidenceForm({
         if (files.length || entry.required)
           answers[entry.id] = await upload(skillId, targetId, files);
       }
+      const comment = String(data.get(COMMENT) ?? '').trim();
       const result = await submitEvidenceAction({
         skillId,
         targetId,
         formId: form.id,
         answers,
+        ...(comment ? { comment } : {}),
       });
       // On success the action calls refresh(), so this card re-renders as "pending". The refresh
       // alone was easy to miss, so success is also confirmed explicitly.
@@ -153,6 +157,18 @@ export function EvidenceForm({
           ))}
         </div>
       </fieldset>
+      {/* Outside the fieldset on purpose: it is not one of the form's questions, and must not
+          look like one. Not keyed by form, so switching form keeps what was written here. */}
+      <label htmlFor={`${skillId}${COMMENT}`} style={{ marginTop: '0.75rem' }}>
+        Vuoi aggiungere qualcosa per chi verifica? (facoltativo)
+      </label>
+      <textarea
+        id={`${skillId}${COMMENT}`}
+        name={COMMENT}
+        rows={2}
+        maxLength={5000}
+        disabled={disabled}
+      />
       <div className="row" style={{ marginTop: '0.75rem' }}>
         <button type="submit" disabled={busy || disabled}>
           {busy ? 'Invio…' : 'Invia per la verifica'}

@@ -36,6 +36,8 @@ const when = (iso?: string) => {
 };
 
 // Labels the stored answers with the form as it was when submitted, not as it reads today.
+// The patrol's comment closes the list: rendered here, it shows wherever the answers do — the
+// reviewer's card and the consultable documentation — under the same visibility rules.
 export function Answers({ evidence }: { evidence: ViewableEvidence }) {
   const fields = evidence.form?.fields ?? [];
   if (!evidence.answers || !fields.length) return null;
@@ -67,6 +69,12 @@ export function Answers({ evidence }: { evidence: ViewableEvidence }) {
           </div>
         );
       })}
+      {evidence.comment && (
+        <>
+          <dt>Nota per chi verifica</dt>
+          <dd style={{ whiteSpace: 'pre-wrap' }}>{evidence.comment}</dd>
+        </>
+      )}
     </dl>
   );
 }

@@ -311,6 +311,57 @@ describe('evidence lifecycle', () => {
     ).toThrow();
   });
 });
+describe('comment on a submission', () => {
+  const send = (s: State, comment?: string) =>
+    execute(s, explorer, {
+      type: 'submitEvidence',
+      skillId: 'a',
+      targetId: 'p1',
+      formId: formOf(s, 'a'),
+      answers: { text: 'Prova' },
+      ...(comment === undefined ? {} : { comment }),
+    }) as Evidence;
+
+  it('stores the comment with the submission', () => {
+    const s = fixture();
+    unlock(s);
+    add(s);
+    expect(send(s, 'Abbiamo usato la bussola di Marta').comment).toBe(
+      'Abbiamo usato la bussola di Marta',
+    );
+  });
+
+  it('drops the previous round’s comment when a rejected proof is resubmitted without one', () => {
+    const s = fixture();
+    unlock(s);
+    add(s);
+    const e = send(s, 'Prima versione');
+    execute(s, cr, { type: 'reviewEvidence', evidenceId: e.id, decision: 'reject', reason: 'No' });
+    send(s);
+    expect(e.status).toBe('pending');
+    expect(e.comment).toBeUndefined();
+    // And a new comment replaces the old one rather than being appended to it.
+    execute(s, cr, { type: 'reviewEvidence', evidenceId: e.id, decision: 'reject', reason: 'No' });
+    expect(send(s, 'Seconda').comment).toBe('Seconda');
+  });
+
+  it('treats a blank comment as no comment', () => {
+    const parsed = commandSchema.parse({
+      type: 'submitEvidence',
+      skillId: 'a',
+      targetId: 'p1',
+      formId: 'f',
+      answers: {},
+      comment: '   ',
+    });
+    // The schema trims, so whitespace arrives as '' — and '' must not be stored.
+    expect(parsed.type === 'submitEvidence' && parsed.comment).toBe('');
+    const s = fixture();
+    unlock(s);
+    add(s);
+    expect(send(s, '').comment).toBeUndefined();
+  });
+});
 // Blue and amber are only labels (review of 2026-11-03): a skill may offer several forms of each.
 describe('several forms of the same colour', () => {
   const text = (id: string) => ({ id, label: id, type: 'text' as const, required: true });

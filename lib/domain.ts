@@ -386,6 +386,10 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
       e.submittedAt = now;
       e.submittedBy = a.id;
       e.status = 'pending';
+      // Belongs to this round only, like the review fields below: a comment left on an earlier,
+      // rejected submission would read as a message about answers it never saw.
+      if (c.comment) e.comment = c.comment;
+      else delete e.comment;
       delete e.reason;
       delete e.reviewedAt;
       delete e.reviewedBy;

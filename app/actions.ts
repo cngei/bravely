@@ -101,6 +101,7 @@ export async function submitEvidenceAction(input: {
   targetId: string;
   formId: string;
   answers: Record<string, string | string[]>;
+  comment?: string;
 }): Promise<ActionResult> {
   return run({ type: 'submitEvidence', ...input });
 }
