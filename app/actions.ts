@@ -6,8 +6,9 @@
 import { ZodError } from 'zod';
 import { refresh } from 'next/cache';
 import { currentActor } from '@/lib/service';
-import { mutate } from '@/lib/db';
-import { execute } from '@/lib/domain';
+import { mutate, readState } from '@/lib/db';
+import { dashboard, execute } from '@/lib/domain';
+import { patrolsCsv } from '@/lib/export';
 import { commandSchema, needsGlobalLock } from '@/lib/commands';
 import { AppError } from '@/lib/errors';
 import type { Achievement, Skill, SkillDraft, SkillFormDraft, State } from '@/lib/model';
@@ -296,4 +297,20 @@ export async function createSkillAction(
       },
     };
   });
+}
+
+// The patrol split as CSV (decision 7: no endpoint, no machine token). Returned as a string for the
+// browser to save. Scoped by dashboard(), the same rule as everything else a leader sees: their own
+// troops, or every troop for an admin — so the export cannot show more than the page around it.
+export async function exportPatrolsAction(): Promise<{ csv?: string; error?: string }> {
+  try {
+    const actor = await currentActor();
+    if (actor.role === 'explorer') return { error: 'Riservato a chi guida un reparto.' };
+    const data = dashboard(await readState(), actor);
+    if (!('patrols' in data)) return { error: 'Nessun reparto da esportare.' };
+    return { csv: patrolsCsv(data.troops, data.patrols, data.people) };
+  } catch (error) {
+    if (error instanceof AppError) return { error: error.message };
+    throw error;
+  }
 }

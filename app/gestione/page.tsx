@@ -7,6 +7,7 @@ import { Banner } from '../ui/banner';
 import { Nav } from '../ui/nav';
 import { CreatePatrolForm } from '../ui/leader-forms';
 import { ExplorerTable } from '../ui/explorer-table';
+import { ExportPatrols } from '../ui/export-patrols';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Gestione · Bravely' };
@@ -46,6 +47,7 @@ export default async function GestionePage() {
           </p>
         )}
         {data.troops.length === 0 && <p className="muted">Nessun reparto da gestire.</p>}
+        {data.troops.length > 0 && <ExportPatrols />}
         {data.troops.map((troop) => {
           const patrols = data.patrols.filter((p) => p.troopId === troop.id);
           const people = data.people.filter((p) => p.troopId === troop.id).sort(byManagement);
