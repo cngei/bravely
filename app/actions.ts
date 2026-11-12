@@ -81,6 +81,22 @@ export async function assignExplorerAction(
   });
 }
 
+// joinPatrol names no person: the domain takes the actor's own row, so an explorer can only
+// ever place themselves.
+export async function joinPatrolAction(
+  _previous: ActionResult,
+  data: FormData,
+): Promise<ActionResult> {
+  return run({ type: 'joinPatrol', patrolId: field(data, 'patrolId') });
+}
+
+export async function confirmAssignmentAction(
+  _previous: ActionResult,
+  data: FormData,
+): Promise<ActionResult> {
+  return run({ type: 'confirmAssignment', personId: field(data, 'personId') });
+}
+
 export async function startSkillAction(
   skillId: string,
   targetId: string,

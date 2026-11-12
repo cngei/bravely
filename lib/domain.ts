@@ -201,7 +201,9 @@ function start(s: State, a: Actor, skill: Skill, targetId: string, now: string):
   return e;
 }
 export function execute(s: State, a: Actor, c: Command, now = new Date().toISOString()): unknown {
-  active(s, a);
+  // joinPatrol is the one command for an explorer without a patrol — which is exactly whom
+  // active() turns away. It checks its own preconditions instead.
+  if (c.type !== 'joinPatrol') active(s, a);
   switch (c.type) {
     case 'createPatrol': {
       manage(a, c.troopId);
@@ -237,6 +239,34 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
         'La pattuglia deve appartenere al reparto dell’esploratore.',
       );
       p.patrolId = ptg.id;
+      // A leader placing someone settles a pending self-assignment, whether it moves them or not.
+      delete p.selfAssigned;
+      return p;
+    }
+    case 'joinPatrol': {
+      // Decision 2 of the November review: effective at once, marked for a leader to confirm.
+      assert(a.role === 'explorer', 403, 'FORBIDDEN', 'Solo chi è in reparto può autoassegnarsi.');
+      const p = s.people.find((p) => p.id === a.id && a.explorerTroopIds.includes(p.troopId));
+      assert(p, 404, 'NOT_FOUND', 'Persona non trovata nel reparto.');
+      // Joining, not moving: changing patrol is the leader's call.
+      assert(!p.patrolId, 409, 'ALREADY_ASSIGNED', 'Hai già una pattuglia.');
+      const ptg = s.patrols.find((x) => x.id === c.patrolId);
+      assert(
+        ptg && ptg.troopId === p.troopId,
+        404,
+        'NOT_FOUND',
+        'Pattuglia non trovata nel reparto.',
+      );
+      p.patrolId = ptg.id;
+      p.selfAssigned = true;
+      return p;
+    }
+    case 'confirmAssignment': {
+      const p = s.people.find((p) => p.id === c.personId);
+      assert(p, 404, 'NOT_FOUND', 'Persona non trovata.');
+      manage(a, p.troopId);
+      assert(p.patrolId, 409, 'NOT_ASSIGNED', 'Nessuna pattuglia da confermare.');
+      delete p.selfAssigned;
       return p;
     }
     case 'saveSkill': {
@@ -334,12 +364,15 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
       const id = `oidc:${u.subject}`,
         old = s.people.find((p) => p.id === id);
       s.people = s.people.filter((p) => p.id !== id);
+      const kept = old?.troopId === u.troopIds[0];
       if (u.role === 'explorer')
         s.people.push({
           id,
           name: u.name,
           troopId: u.troopIds[0],
-          patrolId: old?.troopId === u.troopIds[0] ? old.patrolId : undefined,
+          patrolId: kept ? old.patrolId : undefined,
+          // Same reason as in syncIdentity(): editing the user must not confirm it silently.
+          ...(kept && old.selfAssigned ? { selfAssigned: true } : {}),
         });
       return u;
     }
@@ -542,12 +575,21 @@ function progress(s: State, p: Patrol) {
 export function dashboard(s: State, a: Actor, now = Date.now()) {
   const user = { id: a.id, name: a.name, role: a.role };
   const own = assignedPatrol(s, a);
-  if (a.role === 'explorer' && !own)
+  if (a.role === 'explorer' && !own) {
+    // Not `patrols`: app/page.tsx, app/tree/page.tsx and app/skills/[id]/page.tsx tell the two
+    // shapes apart with `'patrols' in data`, and all three would break.
+    const person = s.people.find((p) => p.id === a.id && a.explorerTroopIds.includes(p.troopId));
+    const joinablePatrols = s.patrols
+      .filter((p) => p.troopId === person?.troopId)
+      .map((p) => ({ id: p.id, name: p.name }))
+      .sort((x, y) => x.name.localeCompare(y.name, 'it'));
     return {
       user,
       assignmentRequired: true,
       message: 'Contatta il tuo capo reparto per essere assegnato a una pattuglia.',
+      joinablePatrols,
     };
+  }
   const patrols = s.patrols.filter(
     (p) =>
       a.role === 'admin' ||

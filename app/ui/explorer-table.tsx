@@ -7,13 +7,14 @@
 // One form per row rather than one for the table: assignExplorerAction is a single command per
 // explorer, so a bulk form would have to apply them one by one and could half-fail.
 import { useActionState } from 'react';
-import { assignExplorerAction, type ActionResult } from '@/app/actions';
+import { assignExplorerAction, confirmAssignmentAction, type ActionResult } from '@/app/actions';
 import { SubmitButton } from './submit-button';
 
 export interface RosterPerson {
   id: string;
   name: string;
   patrolId?: string;
+  selfAssigned?: boolean;
 }
 
 const idle: ActionResult = {};
@@ -66,6 +67,7 @@ function Row({
   patrols: { id: string; name: string }[];
 }) {
   const [state, action] = useActionState(assignExplorerAction, idle);
+  const [confirmState, confirm] = useActionState(confirmAssignmentAction, idle);
   const current = patrols.find((patrol) => patrol.id === person.patrolId);
   return (
     <tr>
@@ -75,7 +77,19 @@ function Row({
       </td>
       <td data-label="Pattuglia">
         {current ? (
-          current.name
+          <>
+            {current.name}
+            {person.selfAssigned && (
+              <form action={confirm} className="row" style={{ marginTop: '0.35rem' }}>
+                <input type="hidden" name="personId" value={person.id} />
+                <span className="badge" data-status="pending">
+                  autoassegnata · da confermare
+                </span>
+                <SubmitButton variant="ghost">Conferma</SubmitButton>
+                {confirmState.error && <span className="error">{confirmState.error}</span>}
+              </form>
+            )}
+          </>
         ) : (
           <span className="badge" data-status="available">
             senza pattuglia

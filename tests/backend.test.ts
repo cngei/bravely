@@ -97,4 +97,32 @@ describe('CNGEI backend adapter', () => {
     });
     expect(s.people).toEqual([{ id: 'e1', name: 'new', troopId: 't1', patrolId: 'p1' }]);
   });
+  it('keeps a pending self-assignment across a login, and drops it with a troop change', () => {
+    const sync = (troopId: string) =>
+      syncIdentity(s, {
+        actor: {
+          id: 'cr',
+          name: 'cr',
+          role: 'leader',
+          troopIds: ['t1', 't2'],
+          explorerTroopIds: [],
+        },
+        troops: [],
+        syncTroopIds: ['t1', 't2'],
+        people: [{ id: 'e1', name: 'e1', troopId }],
+      });
+    const s = initialState();
+    s.people = [{ id: 'e1', name: 'e1', troopId: 't1', patrolId: 'p1', selfAssigned: true }];
+    // Dropping the flag here would confirm the self-assignment with no leader having seen it.
+    sync('t1');
+    expect(s.people[0]).toEqual({
+      id: 'e1',
+      name: 'e1',
+      troopId: 't1',
+      patrolId: 'p1',
+      selfAssigned: true,
+    });
+    sync('t2');
+    expect(s.people[0]).toEqual({ id: 'e1', name: 'e1', troopId: 't2' });
+  });
 });

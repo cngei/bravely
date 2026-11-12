@@ -44,6 +44,8 @@ export const commandSchema = z.discriminatedUnion('type', [
     })
     .strict(),
   z.object({ type: z.literal('createTroop'), name: label }).strict(),
+  z.object({ type: z.literal('joinPatrol'), patrolId: id }).strict(),
+  z.object({ type: z.literal('confirmAssignment'), personId: id }).strict(),
   // Removes the reference only. Attaching is not a command: it goes through POST /api/skill-docs,
   // which writes the bytes itself — a command could point `document` at any file id, including a
   // patrol's attachments, and sidestep canReadUpload.
@@ -109,5 +111,14 @@ export type Command = z.infer<typeof commandSchema>;
 //                 where two racing writers want the same end state or the later one legitimately
 //                 wins — a human race, not a corrupted invariant.
 //   createTroop   a fresh uuid cannot collide.
-const SERIALIZED = new Set<Command['type']>(['createPatrol', 'saveSkill', 'clearSkillDocument']);
+//   confirmAssignment  clears one flag on one row; two leaders confirming want the same outcome.
+//
+// joinPatrol is serialized although no schema-inexpressible invariant is at stake: it reads
+// people and patrols to decide, and it is rare enough that the lock costs nothing.
+const SERIALIZED = new Set<Command['type']>([
+  'createPatrol',
+  'saveSkill',
+  'clearSkillDocument',
+  'joinPatrol',
+]);
 export const needsGlobalLock = (command: Command) => SERIALIZED.has(command.type);

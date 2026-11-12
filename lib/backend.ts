@@ -165,6 +165,14 @@ export function syncIdentity(s: State, r: ResolvedIdentity) {
   for (const p of r.people) {
     const old = s.people.find((x) => x.id === p.id);
     s.people = s.people.filter((x) => x.id !== p.id);
-    s.people.push({ ...p, patrolId: old?.troopId === p.troopId ? old.patrolId : undefined });
+    // Bravely's own fields survive the roster refresh, and only while the troop is unchanged. Both
+    // of them: dropping selfAssigned here would confirm a self-assignment at the next login,
+    // with no leader having looked at it.
+    const kept = old?.troopId === p.troopId;
+    s.people.push({
+      ...p,
+      patrolId: kept ? old.patrolId : undefined,
+      ...(kept && old.selfAssigned ? { selfAssigned: true } : {}),
+    });
   }
 }

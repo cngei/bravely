@@ -5,6 +5,7 @@ import { AppError } from '@/lib/errors';
 import { SkillCard } from './ui/skill-card';
 import { CreatePatrolForm, ReviewForm } from './ui/leader-forms';
 import { ExplorerTable } from './ui/explorer-table';
+import { JoinPatrol } from './ui/join-patrol';
 import { Answers, EvidenceTimes, waiting } from './ui/evidence-view';
 import { attention, byAttention, IDLE_THRESHOLD, tally } from './ui/patrol-attention';
 import { Banner } from './ui/banner';
@@ -259,7 +260,7 @@ export default async function Home() {
       <main>
         <TopBar name={data.user.name} role={data.user.role} />
         {!('patrols' in data) ? (
-          <p style={{ marginTop: '2rem' }}>{data.message}</p>
+          <JoinPatrol patrols={data.joinablePatrols} message={data.message} />
         ) : actor.role === 'explorer' ? (
           // Decided in the 16/10 meeting: the explorer's only screen is the tree, and proofs are
           // submitted from the node's bottom sheet. The card list this replaced is gone.

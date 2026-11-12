@@ -99,6 +99,10 @@ describe('authorization and patrol membership', () => {
       user: { id: 'e1', name: 'Explorer', role: 'explorer' },
       assignmentRequired: true,
       message: expect.any(String),
+      joinablePatrols: [
+        { id: 'p2', name: 'Falchi' },
+        { id: 'p1', name: 'Lupi' },
+      ],
     });
     expect(() => skillDetail(s, explorer, 'initial-1')).toThrow();
     expect(() =>
@@ -310,6 +314,58 @@ describe('evidence lifecycle', () => {
         answers: { text: 'ok', extra: 'no' },
       }),
     ).toThrow();
+  });
+});
+describe('self-assignment', () => {
+  const lone = () => {
+    const s = fixture();
+    delete s.people[0].patrolId;
+    return s;
+  };
+  const join = (s: State, patrolId: string, who: Actor = explorer) =>
+    execute(s, who, { type: 'joinPatrol', patrolId });
+
+  it('lets an explorer with no patrol join one of their troop, effective at once', () => {
+    const s = lone();
+    const data = dashboard(s, explorer);
+    // The patrols on offer, under a name that does not collide with the full dashboard's.
+    if ('patrols' in data) throw new Error('expected the assignment screen');
+    expect(data.joinablePatrols.map((p) => p.id)).toEqual(['p2', 'p1']);
+    // The gate active() would have refused: this is the case moving it enables.
+    join(s, 'p1');
+    expect(s.people[0]).toMatchObject({ patrolId: 'p1', selfAssigned: true });
+    expect('patrols' in dashboard(s, explorer)).toBe(true);
+  });
+
+  it('refuses another troop’s patrol, a second join, and anyone but an explorer', () => {
+    expect(() => join(lone(), 'p3')).toThrow(/Pattuglia non trovata/);
+    const s = lone();
+    join(s, 'p1');
+    // Moving is the leader’s call, not the explorer’s.
+    expect(() => join(s, 'p2')).toThrow(/Hai già una pattuglia/);
+    expect(() => join(lone(), 'p1', cr)).toThrow();
+  });
+
+  it('is settled by a leader’s confirmation or reassignment, only within their troops', () => {
+    const s = lone();
+    join(s, 'p1');
+    const other: Actor = { ...cr, id: 'cr2', troopIds: ['t2'] };
+    expect(() => execute(s, other, { type: 'confirmAssignment', personId: 'e1' })).toThrow();
+    execute(s, cr, { type: 'confirmAssignment', personId: 'e1' });
+    expect(s.people[0].selfAssigned).toBeUndefined();
+    expect(s.people[0].patrolId).toBe('p1');
+
+    const moved = lone();
+    join(moved, 'p1');
+    execute(moved, cr, { type: 'assignExplorer', personId: 'e1', patrolId: 'p2' });
+    expect(moved.people[0]).toEqual({ id: 'e1', name: 'Explorer', troopId: 't1', patrolId: 'p2' });
+  });
+
+  it('keeps every other command behind the assignment gate', () => {
+    const s = lone();
+    expect(() =>
+      execute(s, explorer, { type: 'startSkill', skillId: 'initial-1', targetId: 't1' }),
+    ).toThrow(/assegnat/);
   });
 });
 describe('skill PDF', () => {
