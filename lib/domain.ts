@@ -237,12 +237,6 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
         'SCOPE_IMMUTABLE',
         'Non è possibile cambiare l’ambito di una skill.',
       );
-      assert(
-        unique(c.skill.forms.map((f) => f.color)),
-        400,
-        'DUPLICATE',
-        'Un solo form per colore.',
-      );
       for (const f of c.skill.forms) {
         assert(
           unique(f.fields.map((f) => f.id)),
@@ -264,12 +258,18 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
       // gets a fresh id and the previous version is retired — still readable through
       // Evidence.formId, never offered to a patrol again.
       const retired = new Map<string, SkillForm>();
+      //
+      // A draft carries no id (minting one is the domain's call), so an incoming form is paired
+      // with the old one of the same colour in the same position among that colour's forms — the
+      // only anchor there is. Reordering two forms of one colour therefore retires both and mints
+      // two new ids. Harmless: proofs keep reading the retired ones through Evidence.formId.
+      const ofColor = <F extends { color: SkillForm['color'] }>(list: F[], color: F['color']) =>
+        list.filter((f) => f.color === color);
       const forms = c.skill.forms.map((f, i) => {
-        const previous = old?.forms.find((p) => p.color === f.color);
+        const index = ofColor(c.skill.forms.slice(0, i), f.color).length;
+        const previous = old && ofColor(old.forms, f.color)[index];
         if (previous && sameQuestions(previous, f)) return previous;
         if (previous) retired.set(previous.id, previous);
-        // Position among the forms of this colour; always 0 while there is one form per colour.
-        const index = c.skill.forms.slice(0, i).filter((p) => p.color === f.color).length;
         return { ...f, id: formId(c.skill.id, f.color, revision, index), skillId: c.skill.id };
       });
       // A colour dropped from the catalogue entirely: its form still has proofs pointing at it.
@@ -329,7 +329,7 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
     case 'submitEvidence': {
       const skill = skillById(s, c.skillId);
       writable(s, a, skill, c.targetId);
-      const form = skill.forms.find((f) => f.color === c.color);
+      const form = skill.forms.find((f) => f.id === c.formId);
       assert(form, 400, 'INVALID_FORM', 'Modalità non disponibile.');
       assert(
         Object.keys(c.answers).every((key) => form.fields.some((f) => f.id === key)),

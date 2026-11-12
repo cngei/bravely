@@ -99,7 +99,7 @@ export async function reviewEvidenceAction(
 export async function submitEvidenceAction(input: {
   skillId: string;
   targetId: string;
-  color: 'blue' | 'amber';
+  formId: string;
   answers: Record<string, string | string[]>;
 }): Promise<ActionResult> {
   return run({ type: 'submitEvidence', ...input });
@@ -236,11 +236,12 @@ const slugify = (text: string) =>
     .replace(/^-|-$/g, '')
     .slice(0, 150);
 
-// A skill cannot exist without at least one form (the schema requires 1..2), so a new one
-// starts with a single blue text question that the form builder can then edit.
+// A skill cannot exist without at least one form (the schema requires 1..8), so a new one
+// starts with a single blue text question that the form builder can then edit. The title is
+// neutral on purpose: blue and amber carry no meaning of their own, the admin's title does.
 const STARTER_FORM: SkillFormDraft = {
   color: 'blue',
-  title: 'Racconto',
+  title: 'Nuovo form',
   fields: [{ id: 'racconto', label: 'Com’è andata la prova?', type: 'text', required: true }],
 };
 

@@ -164,7 +164,7 @@ function Body({
           <h3 style={{ marginTop: '1.1rem' }}>Prove richieste</h3>
           <div className="stack">
             {skill.forms.map((form) => (
-              <section key={form.color} className="card" data-color={form.color}>
+              <section key={form.id} className="card" data-color={form.color}>
                 <h4 style={{ fontSize: '0.875rem', margin: 0 }}>
                   {form.title} · {form.color === 'amber' ? 'Ambra' : 'Blu'}
                 </h4>

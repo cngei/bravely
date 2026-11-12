@@ -27,7 +27,7 @@ export const commandSchema = z.discriminatedUnion('type', [
           description: z.string().max(10000),
           scope: z.enum(['troop', 'patrol']),
           prerequisites: z.array(id).max(100),
-          forms: z.array(form).min(1).max(2),
+          forms: z.array(form).min(1).max(8),
           public: z.boolean(),
         })
         .strict(),
@@ -63,7 +63,9 @@ export const commandSchema = z.discriminatedUnion('type', [
       type: z.literal('submitEvidence'),
       skillId: id,
       targetId: id,
-      color: z.enum(['blue', 'amber']),
+      /** Which of the skill's current forms was answered. An id, not a colour: a skill can offer
+          several forms of the same colour, and the colour is only a label. */
+      formId: id,
       answers: z.record(z.string(), z.union([z.string().max(20000), z.array(z.string()).max(10)])),
     })
     .strict(),

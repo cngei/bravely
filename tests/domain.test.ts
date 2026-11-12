@@ -70,13 +70,16 @@ function add(s: State, id = 'a', prerequisites: string[] = [], isPublic = false)
     },
   });
 }
+/** Id of a skill's first current form of the given colour: submissions name a form, not a colour. */
+const formOf = (s: State, skillId: string, color: 'blue' | 'amber' = 'blue') =>
+  s.skills.find((k) => k.id === skillId)!.forms.find((f) => f.color === color)!.id;
 function submit(s: State, skillId: string, targetId: string, a: Actor = cr) {
   const skill = s.skills.find((k) => k.id === skillId)!;
   return execute(s, a, {
     type: 'submitEvidence',
     skillId,
     targetId,
-    color: 'blue',
+    formId: formOf(s, skillId),
     answers: { [skill.scope === 'troop' ? 'description' : 'text']: 'Prova' },
   }) as Evidence;
 }
@@ -130,7 +133,7 @@ describe('authorization and patrol membership', () => {
   });
 });
 describe('skill DAG and shared initial skills', () => {
-  it('requires two initial skills and prevents cycles, duplicate forms and missing prerequisites', () => {
+  it('requires two initial skills and prevents cycles, duplicate field ids and missing prerequisites', () => {
     const s = fixture();
     add(s);
     add(s, 'b', ['a']);
@@ -142,9 +145,12 @@ describe('skill DAG and shared initial skills', () => {
     expect(() =>
       execute(s, admin, { type: 'saveSkill', skill: { ...a, id: 'third', scope: 'troop' } }),
     ).toThrow();
-    expect(() =>
-      execute(s, admin, { type: 'saveSkill', skill: { ...a, forms: [a.forms[0], a.forms[0]] } }),
-    ).toThrow();
+    // Two forms of one colour are allowed since the November review; two fields sharing an id
+    // inside one form are still not, because answers are keyed by field id.
+    const twin = { ...a.forms[0], fields: [a.forms[0].fields[0], a.forms[0].fields[0]] };
+    expect(() => execute(s, admin, { type: 'saveSkill', skill: { ...a, forms: [twin] } })).toThrow(
+      /campi duplicati/,
+    );
   });
   it('all patrol skills require both initial approvals; scouts cannot submit initial skills', () => {
     const s = fixture();
@@ -281,7 +287,7 @@ describe('evidence lifecycle', () => {
         type: 'submitEvidence',
         skillId: 'a',
         targetId: 'p1',
-        color: 'blue',
+        formId: formOf(s, 'a'),
         answers: { text: ' ' },
       }),
     ).toThrow();
@@ -290,7 +296,7 @@ describe('evidence lifecycle', () => {
         type: 'submitEvidence',
         skillId: 'a',
         targetId: 'p1',
-        color: 'amber',
+        formId: formOf(s, 'a', 'amber'),
         answers: { photo: ['not-owned'] },
       }),
     ).toThrow();
@@ -299,10 +305,104 @@ describe('evidence lifecycle', () => {
         type: 'submitEvidence',
         skillId: 'a',
         targetId: 'p1',
-        color: 'blue',
+        formId: formOf(s, 'a'),
         answers: { text: 'ok', extra: 'no' },
       }),
     ).toThrow();
+  });
+});
+// Blue and amber are only labels (review of 2026-11-03): a skill may offer several forms of each.
+describe('several forms of the same colour', () => {
+  const text = (id: string) => ({ id, label: id, type: 'text' as const, required: true });
+  const drafts = [
+    { color: 'blue' as const, title: 'Racconto scritto', fields: [text('a')] },
+    { color: 'amber' as const, title: 'Video', fields: [text('b')] },
+    { color: 'blue' as const, title: 'Intervista', fields: [text('c')] },
+  ];
+  const save = (s: State, forms = drafts) =>
+    execute(s, admin, {
+      type: 'saveSkill',
+      skill: {
+        id: 'multi',
+        title: 'Multi',
+        description: '',
+        scope: 'patrol',
+        prerequisites: [],
+        public: false,
+        forms,
+      },
+    }) as Skill;
+
+  it('mints distinct ids for two blue forms and keeps them across an identical save', () => {
+    const s = fixture();
+    const first = save(s).forms.map((f) => f.id);
+    expect(new Set(first).size).toBe(3);
+    expect(first).toEqual(['multi:blue:r1:0', 'multi:amber:r1:0', 'multi:blue:r1:1']);
+    // The October sameQuestions bug lived exactly here: an unchanged form must keep its id.
+    const second = save(s).forms.map((f) => f.id);
+    expect(second).toEqual(first);
+    expect(s.retiredForms).toEqual([]);
+  });
+
+  it('retires only the edited one of two same-colour forms', () => {
+    const s = fixture();
+    const [blue0, , blue1] = save(s).forms;
+    const edited = save(s, [drafts[0], drafts[1], { ...drafts[2], title: 'Intervista doppia' }]);
+    expect(edited.forms[0].id).toBe(blue0.id);
+    expect(edited.forms[2].id).toBe('multi:blue:r2:1');
+    expect(s.retiredForms.map((f) => f.id)).toEqual([blue1.id]);
+  });
+
+  it('accepts up to eight forms and rejects a ninth at the schema', () => {
+    const forms = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ ...drafts[0], title: `F${i}` }));
+    const command = (n: number) => ({
+      type: 'saveSkill',
+      skill: {
+        id: 'm',
+        title: 'M',
+        description: '',
+        scope: 'patrol',
+        prerequisites: [],
+        public: false,
+        forms: forms(n),
+      },
+    });
+    expect(commandSchema.safeParse(command(8)).success).toBe(true);
+    expect(commandSchema.safeParse(command(9)).success).toBe(false);
+  });
+
+  it('resolves a submission by form id, so the third form is answerable', () => {
+    const s = fixture();
+    unlock(s);
+    const third = save(s).forms[2];
+    const e = execute(s, explorer, {
+      type: 'submitEvidence',
+      skillId: 'multi',
+      targetId: 'p1',
+      formId: third.id,
+      answers: { c: 'Abbiamo intervistato il guardiaparco' },
+    }) as Evidence;
+    expect(e.formId).toBe(third.id);
+    expect(formById(s, e.formId)?.title).toBe('Intervista');
+  });
+
+  it('refuses an unknown or retired form id', () => {
+    const s = fixture();
+    unlock(s);
+    const old = save(s).forms[2];
+    save(s, [drafts[0], drafts[1], { ...drafts[2], title: 'Cambiato' }]);
+    const send = (formId: string) => () =>
+      execute(s, explorer, {
+        type: 'submitEvidence',
+        skillId: 'multi',
+        targetId: 'p1',
+        formId,
+        answers: { c: 'x' },
+      });
+    expect(send('nope')).toThrow(/Modalità non disponibile/);
+    // Retired forms stay readable through Evidence.formId but are never offered again.
+    expect(send(old.id)).toThrow(/Modalità non disponibile/);
   });
 });
 // progress() feeds three screens — the explorer's tree, the leader's patrol cards and the meter on

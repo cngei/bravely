@@ -1,10 +1,10 @@
 'use client';
-// Editor for a skill's blue/amber forms. Unlike the DAG editor this one keeps a local draft
+// Editor for a skill's forms (up to MAX_FORMS, any mix of blue and amber). Unlike the DAG editor this one keeps a local draft
 // and saves once: the whole forms array goes in a single saveSkill, so an edit cannot
 // half-apply, and a builder needs add/remove/reorder before anything is worth persisting.
 //
 // Nothing is validated here beyond keeping the inputs sane. execute() owns the real rules —
-// unique form colours, unique field ids within a form, minFiles <= maxFiles — and its messages
+// unique field ids within a form, minFiles <= maxFiles — and its messages
 // are shown as they come back.
 import { useRef, useState } from 'react';
 import type { Field, SkillForm, SkillFormDraft } from '@/lib/model';
@@ -14,6 +14,8 @@ type DraftField = Field & { key: string };
 type DraftForm = { key: string; color: 'blue' | 'amber'; title: string; fields: DraftField[] };
 
 const COLOR_LABEL = { blue: 'Blu', amber: 'Ambra' } as const;
+/** Same ceiling as saveSkill's schema in lib/commands.ts; the server is what enforces it. */
+const MAX_FORMS = 8;
 
 // Field ids key the stored answers, so they are slugs derived from the label by default.
 const slugify = (text: string) =>
@@ -142,37 +144,27 @@ export function FormBuilder({
     );
   };
 
-  // Colour is assigned, never chosen: the two forms must have different colours, so the second
-  // one takes whichever is free.
-  const addForm = () => {
+  // Blue and amber are only labels (review of 2026-11-03): either can ask for text or media, and
+  // what a form is for is said by the title the admin writes. So a new form starts the same
+  // whatever its colour, with a neutral title and one text question.
+  const addForm = (color: DraftForm['color']) => {
     dirty();
     setForms((current) => {
-      if (current.length >= 2) return current;
-      const color = current.some((form) => form.color === 'blue') ? 'amber' : 'blue';
+      if (current.length >= MAX_FORMS) return current;
       return [
         ...current,
         {
           key: nextKey(),
           color,
-          title: color === 'blue' ? 'Racconto' : 'Foto o video',
+          title: 'Nuovo form',
           fields: [
-            color === 'blue'
-              ? {
-                  key: nextKey(),
-                  id: 'racconto',
-                  label: 'Com’è andata la prova?',
-                  type: 'text',
-                  required: true,
-                }
-              : {
-                  key: nextKey(),
-                  id: 'media',
-                  label: 'Documentazione',
-                  type: 'file',
-                  required: true,
-                  minFiles: 1,
-                  maxFiles: 3,
-                },
+            {
+              key: nextKey(),
+              id: 'racconto',
+              label: 'Com’è andata la prova?',
+              type: 'text',
+              required: true,
+            },
           ],
         },
       ];
@@ -201,10 +193,12 @@ export function FormBuilder({
   return (
     <>
       <div className="stack">
-        {forms.map((form) => (
+        {forms.map((form, formIndex) => (
           <section key={form.key} className="card" data-color={form.color}>
             <div className="card-head">
-              <h3>Form {COLOR_LABEL[form.color]}</h3>
+              <h3>
+                Form {formIndex + 1} · {COLOR_LABEL[form.color]}
+              </h3>
               {forms.length > 1 && (
                 <button type="button" data-variant="danger" onClick={() => removeForm(form.key)}>
                   Elimina form
@@ -221,6 +215,20 @@ export function FormBuilder({
               maxLength={300}
               onChange={(event) => updateForm(form.key, { title: event.target.value })}
             />
+
+            <label htmlFor={`color-${form.key}`} style={{ marginTop: '0.75rem' }}>
+              Colore
+            </label>
+            <select
+              id={`color-${form.key}`}
+              value={form.color}
+              onChange={(event) =>
+                updateForm(form.key, { color: event.target.value as DraftForm['color'] })
+              }
+            >
+              <option value="blue">Blu</option>
+              <option value="amber">Ambra</option>
+            </select>
 
             <h4 style={{ fontSize: '0.875rem', margin: '1rem 0 0.5rem' }}>
               Domande ({form.fields.length})
@@ -362,10 +370,15 @@ export function FormBuilder({
         ))}
       </div>
 
-      {forms.length < 2 && (
-        <button type="button" data-variant="ghost" style={{ marginTop: '1rem' }} onClick={addForm}>
-          Aggiungi il form {forms[0]?.color === 'blue' ? 'ambra' : 'blu'}
-        </button>
+      {forms.length < MAX_FORMS && (
+        <div className="row" style={{ marginTop: '1rem' }}>
+          <button type="button" data-variant="ghost" onClick={() => addForm('blue')}>
+            Aggiungi form blu
+          </button>
+          <button type="button" data-variant="ghost" onClick={() => addForm('amber')}>
+            Aggiungi form ambra
+          </button>
+        </div>
       )}
 
       <div className="row" style={{ marginTop: '1.5rem' }}>
@@ -381,7 +394,8 @@ export function FormBuilder({
       {error && <p className="error">{error}</p>}
       <p className="muted" style={{ marginTop: '0.75rem' }}>
         Cambiare un identificatore vale per gli invii futuri: le prove già inviate conservano la
-        propria copia del form, quindi non si rompono.
+        propria copia del form, quindi non si rompono. Lo stesso vale per colore e ordine: spostare
+        un form fra quelli dello stesso colore lo salva come versione nuova.
       </p>
     </>
   );

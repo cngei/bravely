@@ -32,8 +32,9 @@ export default async function SkillFormsPage({ params }: { params: Promise<{ ski
       <main>
         <Header title={skill.title} />
         <p className="muted">
-          Ogni skill può avere un form blu, uno ambra o entrambi. Le domande possono chiedere una
-          risposta testuale oppure il caricamento di immagini e video.
+          Ogni skill può avere fino a otto form, blu o ambra in qualunque combinazione: il colore è
+          solo un’etichetta, e cosa chiede il form lo dice il titolo. Le domande possono chiedere
+          una risposta testuale oppure il caricamento di immagini e video.
         </p>
         <FormBuilder skillId={skill.id} skillTitle={skill.title} initialForms={skill.forms} />
       </main>

@@ -41,11 +41,11 @@ export function EvidenceForm({
   /** Takes over the confirmation, e.g. a sheet that closes and confirms on the page behind it. */
   onSubmitted?: () => void;
 }) {
-  const [color, setColor] = useState(forms[0].color);
+  const [formId, setFormId] = useState(forms[0].id);
   const [error, setError] = useState<string>();
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
-  const form = forms.find((f) => f.color === color) ?? forms[0];
+  const form = forms.find((f) => f.id === formId) ?? forms[0];
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,7 +70,12 @@ export function EvidenceForm({
         if (files.length || entry.required)
           answers[entry.id] = await upload(skillId, targetId, files);
       }
-      const result = await submitEvidenceAction({ skillId, targetId, color, answers });
+      const result = await submitEvidenceAction({
+        skillId,
+        targetId,
+        formId: form.id,
+        answers,
+      });
       // On success the action calls refresh(), so this card re-renders as "pending". The refresh
       // alone was easy to miss, so success is also confirmed explicitly.
       if (result.error) setError(result.error);
@@ -92,12 +97,12 @@ export function EvidenceForm({
         <div className="row tabs" style={{ marginBottom: '0.5rem' }}>
           {forms.map((option) => (
             <button
-              key={option.color}
+              key={option.id}
               type="button"
               data-path={option.color}
-              data-variant={option.color === color ? undefined : 'ghost'}
-              aria-pressed={option.color === color}
-              onClick={() => setColor(option.color)}
+              data-variant={option.id === form.id ? undefined : 'ghost'}
+              aria-pressed={option.id === form.id}
+              onClick={() => setFormId(option.id)}
             >
               {option.title} · {PATH_NAMES[option.color]}
             </button>
@@ -106,7 +111,9 @@ export function EvidenceForm({
       )}
       {/* Tinted by the path, so the explorer sees which colour the proof will count as before
           sending it — the same blue or amber the leader later sees on the review card. */}
-      <fieldset data-color={form.color}>
+      {/* Keyed by form: two forms can share a field id, and without a remount the answer typed
+          into one would silently carry over into the other. */}
+      <fieldset key={form.id} data-color={form.color}>
         <legend>
           {form.title} · percorso {PATH_NAMES[form.color].toLocaleLowerCase('it')}
         </legend>
