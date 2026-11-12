@@ -98,8 +98,9 @@ export default async function SkillDetailPage({
         <h2>Documentazione consultabile</h2>
         {detail.documentation.length === 0 && (
           <p className="muted">
-            Nessuna documentazione visibile. Le documentazioni delle altre pattuglie sono
-            accessibili solo se la skill è pubblica e la tua pattuglia l’ha già conseguita.
+            Nessuna documentazione visibile. Quella delle altre pattuglie è accessibile solo se la
+            skill è pubblica, la tua pattuglia l’ha già conseguita e chi l’ha verificata l’ha resa
+            consultabile.
           </p>
         )}
         <div className="stack">

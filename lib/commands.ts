@@ -45,6 +45,7 @@ export const commandSchema = z.discriminatedUnion('type', [
     .strict(),
   z.object({ type: z.literal('createTroop'), name: label }).strict(),
   z.object({ type: z.literal('joinPatrol'), patrolId: id }).strict(),
+  z.object({ type: z.literal('publishEvidence'), evidenceId: id }).strict(),
   z.object({ type: z.literal('confirmAssignment'), personId: id }).strict(),
   // Removes the reference only. Attaching is not a command: it goes through POST /api/skill-docs,
   // which writes the bytes itself — a command could point `document` at any file id, including a
@@ -107,11 +108,17 @@ export type Command = z.infer<typeof commandSchema>;
 //                 which is precisely what the global lock was protecting. A submission racing a
 //                 revoked prerequisite is still caught, because reviewEvidence re-checks them
 //                 before approving.
-//   reviewEvidence / assignExplorer / saveAchievements / saveExternalUser  single-row outcomes
+//   assignExplorer / saveAchievements / saveExternalUser  single-row outcomes
 //                 where two racing writers want the same end state or the later one legitimately
 //                 wins — a human race, not a corrupted invariant.
 //   createTroop   a fresh uuid cannot collide.
 //   confirmAssignment  clears one flag on one row; two leaders confirming want the same outcome.
+//
+// publishEvidence and reviewEvidence are serialized together, and not for an invariant: save()
+// rewrites the whole evidence row from the state it loaded, and nothing takes a row lock. A
+// revocation racing a publication could otherwise commit first and then be overwritten by the
+// publication's stale "approved" — a proof revoked by a leader, readable by every patrol. Reviews
+// are rare enough that the lock costs nothing.
 //
 // joinPatrol is serialized although no schema-inexpressible invariant is at stake: it reads
 // people and patrols to decide, and it is rare enough that the lock costs nothing.
@@ -120,5 +127,7 @@ const SERIALIZED = new Set<Command['type']>([
   'saveSkill',
   'clearSkillDocument',
   'joinPatrol',
+  'publishEvidence',
+  'reviewEvidence',
 ]);
 export const needsGlobalLock = (command: Command) => SERIALIZED.has(command.type);

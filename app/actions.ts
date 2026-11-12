@@ -116,6 +116,10 @@ export async function reviewEvidenceAction(
   return run({ type: 'reviewEvidence', evidenceId, decision, ...(reason ? { reason } : {}) });
 }
 
+export async function publishEvidenceAction(evidenceId: string): Promise<ActionResult> {
+  return run({ type: 'publishEvidence', evidenceId });
+}
+
 // Called directly rather than through a <form action>: uploads must finish client-side first,
 // because Server Action bodies are capped at 1 MB while an attachment may be up to 25 MiB.
 export async function submitEvidenceAction(input: {

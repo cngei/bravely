@@ -10,7 +10,7 @@ import {
   formById,
   attachSkillDocument,
 } from '../lib/domain';
-import { commandSchema } from '../lib/commands';
+import { commandSchema, needsGlobalLock } from '../lib/commands';
 import { validateDocument, validateMedia } from '../lib/files';
 const admin: Actor = {
   id: 'admin',
@@ -716,7 +716,11 @@ describe('documentation visibility', () => {
     expect(canReadEvidence(s, explorer, own)).toBe(true);
     expect(canReadEvidence(s, explorer, e)).toBe(false);
     approve(s, own);
+    // Public skill and own approval are no longer enough: the second check is still missing.
+    expect(canReadEvidence(s, explorer, e)).toBe(false);
+    execute(s, admin, { type: 'publishEvidence', evidenceId: e.id });
     expect(canReadEvidence(s, explorer, e)).toBe(true);
+    // Off means off for everyone, whatever was published.
     s.skills.find((k) => k.id === 'a')!.public = false;
     expect(canReadEvidence(s, explorer, e)).toBe(false);
   });
@@ -737,6 +741,106 @@ describe('documentation visibility', () => {
       createdAt: 'now',
     };
     expect(canReadUpload(s, explorer, u)).toBe(false);
+  });
+});
+describe('second check before publication', () => {
+  // Patrol p2 (same troop as the explorer's p1) documents a public skill with a photo; p1 has
+  // earned the same skill. Everything the old rule asked for is satisfied — only the second
+  // check is missing.
+  const setup = () => {
+    const s = fixture();
+    unlock(s);
+    add(s, 'a', [], true);
+    s.uploads.push({
+      id: 'photo-p2',
+      targetId: 'p2',
+      targetType: 'patrol',
+      skillId: 'a',
+      name: 'p.png',
+      type: 'image/png',
+      size: 1,
+      createdBy: 'x',
+      createdAt: 'now',
+    });
+    const theirs = execute(s, cr, {
+      type: 'submitEvidence',
+      skillId: 'a',
+      targetId: 'p2',
+      formId: formOf(s, 'a', 'amber'),
+      answers: { photo: ['photo-p2'] },
+    }) as Evidence;
+    approve(s, theirs, cr);
+    approve(s, submit(s, 'a', 'p1'));
+    const upload = s.uploads.find((u) => u.id === 'photo-p2')!;
+    return { s, theirs, upload };
+  };
+  const publish = (s: State, e: Evidence, a: Actor = cr) =>
+    execute(s, a, { type: 'publishEvidence', evidenceId: e.id });
+
+  it('hides approved documentation and its attachments until published, then shows both', () => {
+    const { s, theirs, upload } = setup();
+    expect(canReadEvidence(s, explorer, theirs)).toBe(false);
+    expect(canReadUpload(s, explorer, upload)).toBe(false);
+    // The patrol's own proof is listed too, by design; the other patrol's must not be.
+    const foreign = () =>
+      skillDetail(s, explorer, 'a').documentation.filter((d) => d.targetId === 'p2');
+    expect(foreign()).toEqual([]);
+    publish(s, theirs);
+    expect(theirs.publishedBy).toBe('cr');
+    expect(canReadEvidence(s, explorer, theirs)).toBe(true);
+    expect(canReadUpload(s, explorer, upload)).toBe(true);
+    expect(foreign()).toHaveLength(1);
+  });
+
+  it('is idempotent and keeps the first decision', () => {
+    const { s, theirs } = setup();
+    execute(s, cr, { type: 'publishEvidence', evidenceId: theirs.id }, '2026-01-01T00:00:00Z');
+    execute(s, admin, { type: 'publishEvidence', evidenceId: theirs.id }, '2026-02-01T00:00:00Z');
+    expect(theirs).toMatchObject({ publishedAt: '2026-01-01T00:00:00Z', publishedBy: 'cr' });
+  });
+
+  it('refuses a proof that is not approved, a private skill, and another troop’s leader', () => {
+    const { s, theirs } = setup();
+    expect(() => publish(s, theirs, { ...cr, id: 'cr2', troopIds: ['t2'] })).toThrow();
+    s.skills.find((k) => k.id === 'a')!.public = false;
+    expect(() => publish(s, theirs)).toThrow(/non è consultabile/);
+    s.skills.find((k) => k.id === 'a')!.public = true;
+    execute(s, cr, {
+      type: 'reviewEvidence',
+      evidenceId: theirs.id,
+      decision: 'reject',
+      reason: 'x',
+    });
+    expect(() => publish(s, theirs)).toThrow(/approvata/);
+  });
+
+  it('loses the publication on revocation, so a re-approval needs the second check again', () => {
+    const { s, theirs } = setup();
+    publish(s, theirs);
+    execute(s, cr, {
+      type: 'reviewEvidence',
+      evidenceId: theirs.id,
+      decision: 'reject',
+      reason: 'x',
+    });
+    expect(theirs.publishedAt).toBeUndefined();
+    expect(theirs.publishedBy).toBeUndefined();
+    execute(s, cr, {
+      type: 'submitEvidence',
+      skillId: 'a',
+      targetId: 'p2',
+      formId: formOf(s, 'a', 'amber'),
+      answers: { photo: ['photo-p2'] },
+    });
+    approve(s, theirs, cr);
+    expect(canReadEvidence(s, explorer, theirs)).toBe(false);
+  });
+
+  it('serializes publication together with review', () => {
+    expect(needsGlobalLock({ type: 'publishEvidence', evidenceId: 'e' })).toBe(true);
+    expect(needsGlobalLock({ type: 'reviewEvidence', evidenceId: 'e', decision: 'approve' })).toBe(
+      true,
+    );
   });
 });
 describe('administration and validation', () => {

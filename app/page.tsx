@@ -3,7 +3,7 @@ import { readState } from '@/lib/db';
 import { dashboard } from '@/lib/domain';
 import { AppError } from '@/lib/errors';
 import { SkillCard } from './ui/skill-card';
-import { CreatePatrolForm, ReviewForm } from './ui/leader-forms';
+import { CreatePatrolForm, PublishForm, ReviewForm } from './ui/leader-forms';
 import { ExplorerTable } from './ui/explorer-table';
 import { JoinPatrol } from './ui/join-patrol';
 import { Answers, EvidenceTimes, waiting } from './ui/evidence-view';
@@ -114,6 +114,14 @@ function LeaderView({ data }: { data: Dashboard }) {
           and the spec asks for exactly that. Rejected evidence has no legal transition
           until the patrol resubmits. */}
       {evidence.status === 'pending' && <ReviewForm evidenceId={evidence.id} />}
+      {evidence.status === 'approved' &&
+        !evidence.publishedAt &&
+        data.skills.find((k) => k.id === evidence.skillId)?.public && (
+          <PublishForm evidenceId={evidence.id} />
+        )}
+      {evidence.status === 'approved' && evidence.publishedAt && (
+        <p className="muted">Consultabile dalle altre pattuglie.</p>
+      )}
       {evidence.status === 'approved' && <ReviewForm evidenceId={evidence.id} onlyReject />}
     </article>
   );

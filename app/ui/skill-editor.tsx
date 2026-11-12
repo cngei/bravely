@@ -326,7 +326,8 @@ function SkillMetaForm({ skill }: { skill: EditorSkill }) {
         Allegati pubblici
       </label>
       <p className="muted">
-        Se attivo, le altre pattuglie possono vedere la documentazione approvata di questa skill.
+        Se disattivo, la documentazione di questa skill non sarà mai consultabile dalle altre
+        pattuglie. Se attivo, serve comunque una seconda conferma di chi verifica per ogni prova.
       </p>
 
       <div className="row" style={{ marginTop: '0.75rem' }}>

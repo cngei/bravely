@@ -445,6 +445,8 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
       delete e.reason;
       delete e.reviewedAt;
       delete e.reviewedBy;
+      // New answers, new decision: a publication granted on the previous round does not carry.
+      unpublish(e);
       return e;
     }
     case 'reviewEvidence': {
@@ -470,6 +472,34 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
       e.reason = c.decision === 'reject' ? c.reason : undefined;
       e.reviewedAt = now;
       e.reviewedBy = a.id;
+      // A revoked proof loses its publication: approved again later, it must go through the second
+      // check again rather than reappear in every patrol's view on the strength of the old one.
+      if (c.decision === 'reject') unpublish(e);
+      return e;
+    }
+    case 'publishEvidence': {
+      // The second, explicit privacy pass of the November review. A command of its own, not a
+      // checkbox inside reviewEvidence: two decisions, tracked separately.
+      const e = s.evidence.find((e) => e.id === c.evidenceId);
+      assert(e, 404, 'NOT_FOUND', 'Prova non trovata.');
+      manage(a, evidenceTroop(s, e));
+      assert(
+        e.status === 'approved',
+        409,
+        'INVALID_TRANSITION',
+        'Si pubblica solo una prova approvata.',
+      );
+      assert(
+        skillById(s, e.skillId).public,
+        409,
+        'NOT_PUBLIC',
+        'La skill non è consultabile dalle altre pattuglie.',
+      );
+      // Idempotent: a second click keeps the first decision's who and when.
+      if (!e.publishedAt) {
+        e.publishedAt = now;
+        e.publishedBy = a.id;
+      }
       return e;
     }
     case 'clearSkillDocument': {
@@ -492,6 +522,10 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
     }
   }
 }
+function unpublish(e: Evidence) {
+  delete e.publishedAt;
+  delete e.publishedBy;
+}
 export function canReadEvidence(s: State, a: Actor, e: Evidence): boolean {
   if (a.role === 'admin' || a.role === 'leader') return true;
   const p = assignedPatrol(s, a);
@@ -499,9 +533,13 @@ export function canReadEvidence(s: State, a: Actor, e: Evidence): boolean {
   if (e.targetType === 'patrol' && e.targetId === p.id) return true;
   const skill = skillById(s, e.skillId);
   const ownTarget = skill.scope === 'troop' ? p.troopId : p.id;
+  // Another target's documentation. `public` off means off for everyone, whatever was published;
+  // on, each proof also needs its own second check. canReadUpload builds on this, so the gate
+  // sits in one place for answers and downloads alike.
   return (
     skill.public &&
     e.status === 'approved' &&
+    e.publishedAt !== undefined &&
     s.evidence.some(
       (x) => x.skillId === skill.id && x.targetId === ownTarget && x.status === 'approved',
     )

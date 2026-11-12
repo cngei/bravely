@@ -1,7 +1,8 @@
 'use client';
-import { useActionState } from 'react';
+import { useActionState, useRef, useState } from 'react';
 import {
   createPatrolAction,
+  publishEvidenceAction,
   reviewEvidenceAction,
   startSkillAction,
   type ActionResult,
@@ -68,5 +69,56 @@ export function ReviewForm({
       </div>
       {state.error && <p className="error">{state.error}</p>}
     </form>
+  );
+}
+
+// The second check before an approved proof becomes readable by every patrol (November review).
+// Rendered from state — approved, public skill, not yet published — so it appears on its own right
+// after approval and stays there if the leader skips it: the second pass cannot get lost. The
+// confirmation is a native <dialog>, like the skill sheet, for focus trapping and Esc for free.
+export function PublishForm({ evidenceId }: { evidenceId: string }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+
+  async function publish() {
+    setBusy(true);
+    setError(undefined);
+    const result = await publishEvidenceAction(evidenceId).catch(() => ({
+      error: 'Pubblicazione non riuscita.',
+    }));
+    setBusy(false);
+    if ('error' in result && result.error) setError(result.error);
+    else dialog.current?.close();
+  }
+
+  return (
+    <section className="card" style={{ marginTop: '0.75rem' }}>
+      <h4>Seconda verifica</h4>
+      <p className="muted">
+        La skill è consultabile dalle altre pattuglie, ma questa prova non lo è ancora. Ricontrolla
+        risposte e allegati — volti, nomi, luoghi riconoscibili — prima di renderla visibile in
+        tutta Italia.
+      </p>
+      <button type="button" data-variant="ghost" onClick={() => dialog.current?.showModal()}>
+        Rendi consultabile…
+      </button>
+      {error && <p className="error">{error}</p>}
+      <dialog ref={dialog} aria-labelledby={`publish-${evidenceId}`}>
+        <h3 id={`publish-${evidenceId}`}>Rendere consultabile questa prova?</h3>
+        <p>
+          Le pattuglie che hanno conseguito questa skill potranno leggere le risposte e scaricare
+          gli allegati. Si può revocare solo rigettando la prova.
+        </p>
+        <div className="row">
+          <button type="button" onClick={publish} disabled={busy}>
+            {busy ? 'Pubblicazione…' : 'Sì, rendila consultabile'}
+          </button>
+          <button type="button" data-variant="ghost" onClick={() => dialog.current?.close()}>
+            Annulla
+          </button>
+        </div>
+      </dialog>
+    </section>
   );
 }
