@@ -3,6 +3,10 @@ import { readState } from '@/lib/db';
 import { dashboard } from '@/lib/domain';
 import { AppError } from '@/lib/errors';
 import { Banner } from '../ui/banner';
+import { Nav } from '../ui/nav';
+import { managementAlerts, type ManagementAlerts } from '@/lib/notifications';
+import type { Role } from '@/lib/model';
+
 import { TreeScreen, selectPatrol } from '../ui/tree-screen';
 
 export const dynamic = 'force-dynamic';
@@ -17,12 +21,14 @@ export default async function TreePage({
 }) {
   try {
     const actor = await currentActor();
-    const data = dashboard(await readState(), actor);
+    const state = await readState();
+    const data = dashboard(state, actor);
+    const nav = { role: actor.role, alerts: managementAlerts(state.people, actor) };
 
     if (!('patrols' in data))
       return (
         <main>
-          <Header subtitle="" />
+          <Header subtitle="" nav={nav} />
           <p>{data.message}</p>
         </main>
       );
@@ -33,6 +39,7 @@ export default async function TreePage({
     return (
       <main>
         <Header
+          nav={nav}
           subtitle={
             selected ? selected.name : 'Struttura del percorso — nessuna pattuglia da seguire'
           }
@@ -72,17 +79,16 @@ export default async function TreePage({
   }
 }
 
-function Header({ subtitle }: { subtitle: string }) {
+function Header({
+  subtitle,
+  nav,
+}: {
+  subtitle: string;
+  nav?: { role: Role; alerts?: ManagementAlerts };
+}) {
   return (
     <>
-      <Banner>
-        <a className="chip" href="/">
-          Dashboard
-        </a>
-        <a className="chip" data-active href="/tree">
-          Albero
-        </a>
-      </Banner>
+      <Banner>{nav && <Nav role={nav.role} alerts={nav.alerts} active="tree" />}</Banner>
       <div className="topbar">
         <div>
           <h1>Albero delle skill</h1>

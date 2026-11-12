@@ -1494,3 +1494,16 @@ dialog.sheet::backdrop {
     width: 100%;
   }
 }
+
+/* The "Gestione" dot (app/ui/nav.tsx): someone in a managed troop has no patrol, or joined one and
+   is waiting for a confirmation. Decorative — the chip's aria-label carries it in words. */
+.nav-dot {
+  background: #e0781f;
+  border: 2px solid #fdf8ea;
+  border-radius: 50%;
+  display: inline-block;
+  height: 0.65rem;
+  margin-left: 0.4rem;
+  vertical-align: 0.1em;
+  width: 0.65rem;
+}

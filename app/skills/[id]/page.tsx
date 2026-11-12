@@ -14,6 +14,9 @@ import { SkillCard } from '../../ui/skill-card';
 import { Answers, EvidenceTimes } from '../../ui/evidence-view';
 import { STATUS_LABELS } from '../../ui/labels';
 import { Banner } from '../../ui/banner';
+import { Nav } from '../../ui/nav';
+import { managementAlerts, type ManagementAlerts } from '@/lib/notifications';
+import type { Role } from '@/lib/model';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,11 +32,12 @@ export default async function SkillDetailPage({
     const state = await readState();
     const { id } = await params;
     const data = dashboard(state, actor);
+    const nav = { role: actor.role, alerts: managementAlerts(state.people, actor) };
 
     if (!('patrols' in data))
       return (
         <main>
-          <Header title="Skill" />
+          <Header title="Skill" nav={nav} />
           <p>{data.message}</p>
         </main>
       );
@@ -52,7 +56,7 @@ export default async function SkillDetailPage({
 
     return (
       <main>
-        <Header title={detail.skill.title} subtitle={patrol?.name} />
+        <Header title={detail.skill.title} subtitle={patrol?.name} nav={nav} />
 
         {entry && (
           <p>
@@ -152,17 +156,18 @@ export default async function SkillDetailPage({
   }
 }
 
-function Header({ title, subtitle }: { title: string; subtitle?: string }) {
+function Header({
+  title,
+  subtitle,
+  nav,
+}: {
+  title: string;
+  subtitle?: string;
+  nav?: { role: Role; alerts?: ManagementAlerts };
+}) {
   return (
     <>
-      <Banner>
-        <a className="chip" href="/tree">
-          ← Albero
-        </a>
-        <a className="chip" href="/">
-          Dashboard
-        </a>
-      </Banner>
+      <Banner>{nav && <Nav role={nav.role} alerts={nav.alerts} active="tree" />}</Banner>
       <div className="topbar">
         <div>
           <h1>{title}</h1>

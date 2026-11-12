@@ -6,6 +6,9 @@ import { SkillEditor } from '../ui/skill-editor';
 import { AchievementsEditor } from '../ui/achievements-editor';
 import { ExternalTroops, ExternalUsers } from '../ui/external-admin';
 import { Banner } from '../ui/banner';
+import { Nav } from '../ui/nav';
+import { managementAlerts, type ManagementAlerts } from '@/lib/notifications';
+import type { Role } from '@/lib/model';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Amministrazione · Bravely' };
@@ -17,7 +20,7 @@ export default async function AdminPage() {
     if (actor.role !== 'admin')
       return (
         <main>
-          <Header />
+          <Header nav={{ role: actor.role }} />
           <p>Questa sezione è riservata agli amministratori Bravely.</p>
           <p className="muted">
             Serve il ruolo realm <code>ADMIN_BRAVELY</code> in Keycloak, assegnato esplicitamente.
@@ -26,6 +29,7 @@ export default async function AdminPage() {
       );
 
     const state = await readState();
+    const nav = { role: actor.role, alerts: managementAlerts(state.people, actor) };
     // Only external troops may hold external users — saveExternalUser rejects CNGEI ones.
     const externalTroops = state.troops
       .filter((troop) => troop.source === 'external')
@@ -35,7 +39,7 @@ export default async function AdminPage() {
 
     return (
       <main>
-        <Header />
+        <Header nav={nav} />
         <h2>Albero delle skill</h2>
         <SkillEditor
           skills={state.skills.map((skill) => ({
@@ -87,20 +91,10 @@ export default async function AdminPage() {
   }
 }
 
-function Header() {
+function Header({ nav }: { nav?: { role: Role; alerts?: ManagementAlerts } }) {
   return (
     <>
-      <Banner>
-        <a className="chip" data-active href="/admin">
-          Admin
-        </a>
-        <a className="chip" href="/tree">
-          Albero
-        </a>
-        <a className="chip" href="/">
-          Dashboard
-        </a>
-      </Banner>
+      <Banner>{nav && <Nav role={nav.role} alerts={nav.alerts} active="admin" />}</Banner>
       <div className="topbar">
         <div>
           <h1>Amministrazione</h1>

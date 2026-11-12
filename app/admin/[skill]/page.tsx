@@ -4,6 +4,9 @@ import { AppError } from '@/lib/errors';
 import { FormBuilder } from '../../ui/form-builder';
 import { SkillDocument } from '../../ui/skill-document';
 import { Banner } from '../../ui/banner';
+import { Nav } from '../../ui/nav';
+import { managementAlerts, type ManagementAlerts } from '@/lib/notifications';
+import type { Role } from '@/lib/model';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,24 +17,26 @@ export default async function SkillFormsPage({ params }: { params: Promise<{ ski
     if (actor.role !== 'admin')
       return (
         <main>
-          <Header title="Form" />
+          <Header title="Form" nav={{ role: actor.role }} />
           <p>Questa sezione è riservata agli amministratori Bravely.</p>
         </main>
       );
 
     const { skill: skillId } = await params;
-    const skill = (await readState()).skills.find((k) => k.id === skillId);
+    const state = await readState();
+    const nav = { role: actor.role, alerts: managementAlerts(state.people, actor) };
+    const skill = state.skills.find((k) => k.id === skillId);
     if (!skill)
       return (
         <main>
-          <Header title="Form" />
+          <Header title="Form" nav={nav} />
           <p>Skill non trovata.</p>
         </main>
       );
 
     return (
       <main>
-        <Header title={skill.title} />
+        <Header title={skill.title} nav={nav} />
         <p className="muted">
           Ogni skill può avere fino a otto form, blu o ambra in qualunque combinazione: il colore è
           solo un’etichetta, e cosa chiede il form lo dice il titolo. Le domande possono chiedere
@@ -58,14 +63,16 @@ export default async function SkillFormsPage({ params }: { params: Promise<{ ski
   }
 }
 
-function Header({ title }: { title: string }) {
+function Header({
+  title,
+  nav,
+}: {
+  title: string;
+  nav?: { role: Role; alerts?: ManagementAlerts };
+}) {
   return (
     <>
-      <Banner>
-        <a className="chip" href="/admin">
-          ← Amministrazione
-        </a>
-      </Banner>
+      <Banner>{nav && <Nav role={nav.role} alerts={nav.alerts} active="admin" />}</Banner>
       <div className="topbar">
         <div>
           <h1>{title}</h1>

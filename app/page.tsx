@@ -3,8 +3,10 @@ import { readState } from '@/lib/db';
 import { dashboard } from '@/lib/domain';
 import { AppError } from '@/lib/errors';
 import { SkillCard } from './ui/skill-card';
-import { CreatePatrolForm, PublishForm, ReviewForm } from './ui/leader-forms';
-import { ExplorerTable } from './ui/explorer-table';
+import { PublishForm, ReviewForm } from './ui/leader-forms';
+import { Nav } from './ui/nav';
+import { managementAlerts, type ManagementAlerts } from '@/lib/notifications';
+import type { Role } from '@/lib/model';
 import { JoinPatrol } from './ui/join-patrol';
 import { Answers, EvidenceTimes, waiting } from './ui/evidence-view';
 import { attention, byAttention, IDLE_THRESHOLD, tally } from './ui/patrol-attention';
@@ -21,24 +23,11 @@ const ROLES: Record<string, string> = {
   explorer: 'esploratore',
 };
 
-function TopBar({ name, role }: { name: string; role: string }) {
+function TopBar({ name, role, alerts }: { name: string; role: Role; alerts: ManagementAlerts }) {
   return (
     <>
       <Banner>
-        {role === 'admin' && (
-          <a className="chip" href="/admin">
-            Admin
-          </a>
-        )}
-        {/* No link to /tree for an explorer: this page already is the tree. */}
-        {role !== 'explorer' && (
-          <a className="chip" href="/tree">
-            Albero
-          </a>
-        )}
-        <form action="/auth/logout" method="post">
-          <button data-variant="ghost">Esci</button>
-        </form>
+        <Nav role={role} alerts={alerts} active="dashboard" />
       </Banner>
       <div className="topbar">
         <div>
@@ -50,7 +39,7 @@ function TopBar({ name, role }: { name: string; role: string }) {
   );
 }
 
-function LeaderView({ data }: { data: Dashboard }) {
+function LeaderView({ data, alerts }: { data: Dashboard; alerts: ManagementAlerts }) {
   const titleOf = (id: string) => data.skills.find((k) => k.id === id)?.title ?? id;
   const evidenceFor = (skillId: string, targetId: string) =>
     data.evidence.find((e) => e.skillId === skillId && e.targetId === targetId);
@@ -132,6 +121,17 @@ function LeaderView({ data }: { data: Dashboard }) {
       {/* The queue used to be every proof ever submitted, unpaginated, above everything else: to
           reach the patrols a leader scrolled past the whole archive. Only what needs a decision
           stays up here; the rest is one click away and says how much it is holding. */}
+      {/* Same count as the dot on the Gestione chip, said in words where the leader starts. */}
+      {alerts.total > 0 && (
+        <p className="muted">
+          <a href="/gestione">
+            {alerts.total === 1
+              ? '1 persona da sistemare in Gestione'
+              : `${alerts.total} persone da sistemare in Gestione`}
+          </a>
+          : senza pattuglia o con un’autoassegnazione da confermare.
+        </p>
+      )}
       <h2>Da verificare · {pending.length}</h2>
       {pending.length === 0 && <p className="muted">Nessuna prova in attesa di verifica.</p>}
       <div className="stack">{pending.map(card)}</div>
@@ -246,13 +246,13 @@ function LeaderView({ data }: { data: Dashboard }) {
                 ))}
             </div>
 
-            <h3 style={{ marginTop: '2rem' }}>Gestione</h3>
-            <CreatePatrolForm troopId={troop.id} />
-
-            <h3 style={{ marginTop: '2rem' }}>Esploratori del reparto · {people.length}</h3>
-            {/* Always rendered: the roster is how a leader starts, so it must not depend on a
-                patrol already existing. */}
-            <ExplorerTable people={people} patrols={patrols} />
+            {/* Creating patrols and the roster moved to /gestione (decision 4 of the November
+                review); the dashboard keeps the queue and the progress. */}
+            {patrols.length === 0 && (
+              <p className="muted">
+                <a href="/gestione">Crea la prima pattuglia in Gestione.</a>
+              </p>
+            )}
           </section>
         );
       })}
@@ -263,10 +263,12 @@ function LeaderView({ data }: { data: Dashboard }) {
 export default async function Home() {
   try {
     const actor = await currentActor();
-    const data = dashboard(await readState(), actor);
+    const state = await readState();
+    const data = dashboard(state, actor);
+    const alerts = managementAlerts(state.people, actor);
     return (
       <main>
-        <TopBar name={data.user.name} role={data.user.role} />
+        <TopBar name={data.user.name} role={data.user.role} alerts={alerts} />
         {!('patrols' in data) ? (
           <JoinPatrol patrols={data.joinablePatrols} message={data.message} />
         ) : actor.role === 'explorer' ? (
@@ -274,7 +276,7 @@ export default async function Home() {
           // submitted from the node's bottom sheet. The card list this replaced is gone.
           <TreeScreen data={data} role={actor.role} />
         ) : (
-          <LeaderView data={data} />
+          <LeaderView data={data} alerts={alerts} />
         )}
       </main>
     );
