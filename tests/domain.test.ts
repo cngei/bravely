@@ -8,9 +8,10 @@ import {
   canReadEvidence,
   canReadUpload,
   formById,
+  attachSkillDocument,
 } from '../lib/domain';
 import { commandSchema } from '../lib/commands';
-import { validateMedia } from '../lib/files';
+import { validateDocument, validateMedia } from '../lib/files';
 const admin: Actor = {
   id: 'admin',
   name: 'Admin',
@@ -309,6 +310,57 @@ describe('evidence lifecycle', () => {
         answers: { text: 'ok', extra: 'no' },
       }),
     ).toThrow();
+  });
+});
+describe('skill PDF', () => {
+  const doc = { id: 'f-doc', name: 'guida.pdf', size: 1234 };
+
+  it('only the admin attaches or removes it', () => {
+    const s = fixture();
+    add(s);
+    expect(() => attachSkillDocument(s, cr, 'a', doc)).toThrow();
+    attachSkillDocument(s, admin, 'a', doc);
+    expect(() => execute(s, cr, { type: 'clearSkillDocument', skillId: 'a' })).toThrow();
+    execute(s, admin, { type: 'clearSkillDocument', skillId: 'a' });
+    expect(s.skills.find((k) => k.id === 'a')?.document).toBeUndefined();
+  });
+
+  it('survives a saveSkill, which never carries it', () => {
+    const s = fixture();
+    add(s);
+    attachSkillDocument(s, admin, 'a', doc);
+    add(s);
+    expect(s.skills.find((k) => k.id === 'a')?.document).toEqual(doc);
+  });
+
+  it('is not settable through the command schema', () => {
+    const parsed = commandSchema.safeParse({
+      type: 'saveSkill',
+      skill: {
+        id: 'a',
+        title: 'a',
+        description: '',
+        scope: 'patrol',
+        prerequisites: [],
+        public: false,
+        forms: [
+          {
+            color: 'blue',
+            title: 'B',
+            fields: [{ id: 't', label: 'T', type: 'text', required: true }],
+          },
+        ],
+        document: doc,
+      },
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('accepts a PDF by its magic number and nothing else', () => {
+    expect(validateDocument(Buffer.from('%PDF-1.4 ...'))).toBe('application/pdf');
+    expect(() => validateDocument(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))).toThrow();
+    expect(() => validateDocument(Buffer.alloc(0))).toThrow();
+    expect(() => validateDocument(Buffer.alloc(10 * 1024 * 1024 + 1, '%PDF-'))).toThrow();
   });
 });
 describe('comment on a submission', () => {

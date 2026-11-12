@@ -56,6 +56,12 @@ async function runWith(
   return { ok: true };
 }
 
+// Removes the reference only; the bytes stay in `files`. Uploading is not an action: a PDF may be
+// 10 MiB and Server Action bodies are capped at 1 MB, so it goes to POST /api/skill-docs.
+export async function clearSkillDocumentAction(skillId: string): Promise<ActionResult> {
+  return run({ type: 'clearSkillDocument', skillId });
+}
+
 export async function createPatrolAction(
   troopId: string,
   _previous: ActionResult,

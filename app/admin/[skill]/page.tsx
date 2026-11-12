@@ -2,6 +2,7 @@ import { currentActor } from '@/lib/service';
 import { readState } from '@/lib/db';
 import { AppError } from '@/lib/errors';
 import { FormBuilder } from '../../ui/form-builder';
+import { SkillDocument } from '../../ui/skill-document';
 import { Banner } from '../../ui/banner';
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,7 @@ export default async function SkillFormsPage({ params }: { params: Promise<{ ski
           solo un’etichetta, e cosa chiede il form lo dice il titolo. Le domande possono chiedere
           una risposta testuale oppure il caricamento di immagini e video.
         </p>
+        <SkillDocument skillId={skill.id} document={skill.document} />
         <FormBuilder skillId={skill.id} skillTitle={skill.title} initialForms={skill.forms} />
       </main>
     );

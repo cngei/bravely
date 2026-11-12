@@ -389,4 +389,81 @@ suite('real PostgreSQL persistence and concurrency', () => {
       auth.actor = actor;
     }
   });
+  it('HTTP skill PDF: admin-only upload, gated download, kept by saveSkill, removable', async () => {
+    const pdf = Buffer.from('%PDF-1.7\n%fake but correctly sniffed\n');
+    const post = (body: Buffer) =>
+      routes.POST(
+        new Request('http://localhost:3000/api/skill-docs?skillId=initial-2&name=guida.pdf', {
+          method: 'POST',
+          headers: { origin: 'http://localhost:3000' },
+          body: new Uint8Array(body),
+        }),
+        { params: Promise.resolve({ path: ['skill-docs'] }) },
+      );
+    const get = () =>
+      routes.GET(new Request('http://localhost:3000/api/skill-docs/initial-2'), {
+        params: Promise.resolve({ path: ['skill-docs', 'initial-2'] }),
+      });
+    const as = async <T>(who: Actor, run: () => Promise<T>) => {
+      auth.actor = who;
+      try {
+        return await run();
+      } finally {
+        auth.actor = actor;
+      }
+    };
+    const leader: Actor = {
+      id: 'l',
+      name: 'Leader',
+      role: 'leader',
+      troopIds: ['t'],
+      explorerTroopIds: [],
+    };
+    const unassigned: Actor = {
+      id: 'nobody',
+      name: 'Nobody',
+      role: 'explorer',
+      troopIds: [],
+      explorerTroopIds: [],
+    };
+
+    // Upload: a leader is refused, a non-PDF is refused, the admin's PDF goes in.
+    expect((await as(leader, () => post(pdf))).status).toBe(403);
+    expect((await post(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))).status).toBe(415);
+    expect((await post(pdf)).status).toBe(201);
+
+    // Download: any active actor, with the defensive headers; an unassigned explorer is not one.
+    const res = await as(leader, get);
+    expect(res.status).toBe(200);
+    expect(Buffer.from(await res.arrayBuffer())).toEqual(pdf);
+    expect(res.headers.get('content-type')).toBe('application/pdf');
+    expect(res.headers.get('content-disposition')).toContain('attachment');
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(res.headers.get('content-security-policy')).toContain('sandbox');
+    expect((await as(unassigned, get)).status).toBe(403);
+
+    // The trap: saving the skill's metadata from the admin panel must not drop the PDF.
+    const skill = (await db.readState()).skills.find((k) => k.id === 'initial-2')!;
+    await db.mutate((s) =>
+      execute(s, actor, {
+        type: 'saveSkill',
+        skill: {
+          id: skill.id,
+          title: 'Titolo nuovo',
+          description: skill.description,
+          scope: skill.scope,
+          prerequisites: skill.prerequisites,
+          public: skill.public,
+          forms: skill.forms.map(({ id: _id, skillId: _skillId, ...draft }) => draft),
+        },
+      }),
+    );
+    expect((await db.readState()).skills.find((k) => k.id === 'initial-2')?.document?.name).toBe(
+      'guida.pdf',
+    );
+    expect((await get()).status).toBe(200);
+
+    await db.mutate((s) => execute(s, actor, { type: 'clearSkillDocument', skillId: 'initial-2' }));
+    expect((await get()).status).toBe(404);
+  });
 });

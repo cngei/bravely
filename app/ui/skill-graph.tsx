@@ -44,6 +44,7 @@ export interface GraphNode {
   reason?: string;
   /** Only for pending evidence. */
   waitingSeconds?: number;
+  hasDocument?: boolean;
   x: number;
   y: number;
 }
@@ -168,6 +169,7 @@ export function SkillGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
         hasEvidence: open.hasEvidence,
         reason: open.reason,
         waitingSeconds: open.waitingSeconds,
+        hasDocument: open.hasDocument,
       }
     : null;
 

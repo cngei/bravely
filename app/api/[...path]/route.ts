@@ -6,17 +6,25 @@ import { checkOrigin } from '@/lib/auth';
 import { AppError, assert } from '@/lib/errors';
 import {
   active,
+  attachSkillDocument,
   evidenceView,
   dashboard,
   skillDetail,
   canReadEvidence,
   canReadUpload,
   execute,
+  requireAdmin,
   skillById,
   writable,
 } from '@/lib/domain';
 import { commandSchema, needsGlobalLock } from '@/lib/commands';
-import { boundedBody, MAX_FILE_SIZE, validateMedia } from '@/lib/files';
+import {
+  boundedBody,
+  MAX_DOCUMENT_SIZE,
+  MAX_FILE_SIZE,
+  validateDocument,
+  validateMedia,
+} from '@/lib/files';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 function json(value: unknown, status = 200) {
@@ -25,6 +33,17 @@ function json(value: unknown, status = 200) {
     headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' },
   });
 }
+// Every download carries these. `attachment` + `nosniff` + a sandboxing CSP are what make serving
+// user-supplied bytes from our own origin safe; none of them is optional.
+const download = (type: string, size: number, name: string) => ({
+  'Content-Type': type,
+  'Content-Length': String(size),
+  'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(name).replace(/'/g, '%27')}`,
+  'Cache-Control': 'private, no-store',
+  'X-Content-Type-Options': 'nosniff',
+  'Content-Security-Policy': "default-src 'none'; sandbox",
+});
+const safeName = (name: string) => name.replace(/[\x00-\x1f/\\]/g, '_');
 function fail(e: unknown) {
   if (e instanceof AppError) return json({ error: { code: e.code, message: e.message } }, e.status);
   if (e instanceof ZodError)
@@ -65,14 +84,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
       const { rows } = await pool.query('SELECT data FROM files WHERE id=$1', [u.id]);
       assert(rows[0], 404, 'NOT_FOUND', 'File non trovato.');
       return new Response(new Uint8Array(rows[0].data), {
-        headers: {
-          'Content-Type': u.type,
-          'Content-Length': String(u.size),
-          'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(u.name).replace(/'/g, '%27')}`,
-          'Cache-Control': 'private, no-store',
-          'X-Content-Type-Options': 'nosniff',
-          'Content-Security-Policy': "default-src 'none'; sandbox",
-        },
+        headers: download(u.type, u.size, u.name),
+      });
+    }
+    // The skill's PDF, for any active actor — including on a locked skill, since explaining a
+    // skill before it is attempted is the document's whole point. Authentication and the patrol
+    // assignment gate above (currentActor + active) still apply.
+    if (path.length === 2 && path[0] === 'skill-docs') {
+      const doc = skillById(s, path[1]).document;
+      assert(doc, 404, 'NOT_FOUND', 'Documento non trovato.');
+      const { rows } = await pool.query('SELECT data FROM files WHERE id=$1', [doc.id]);
+      assert(rows[0], 404, 'NOT_FOUND', 'Documento non trovato.');
+      return new Response(new Uint8Array(rows[0].data), {
+        headers: download('application/pdf', doc.size, doc.name),
       });
     }
     return json({ error: { code: 'NOT_FOUND', message: 'Endpoint non trovato.' } }, 404);
@@ -130,7 +154,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pat
             skillId,
             targetId,
             targetType: skill.scope,
-            name: name.replace(/[\x00-\x1f/\\]/g, '_'),
+            name: safeName(name),
             type,
             size: bytes.length,
             createdBy: a.id,
@@ -140,6 +164,33 @@ export async function POST(request: Request, { params }: { params: Promise<{ pat
           s.uploads.push(upload);
           return { ...upload, url: `/api/files/${upload.id}` };
         }, false),
+        201,
+      );
+    }
+    if (path.length === 1 && path[0] === 'skill-docs') {
+      // Refuse before reading up to 10 MiB from someone who may not upload at all.
+      requireAdmin(a);
+      const url = new URL(request.url),
+        skillId = url.searchParams.get('skillId'),
+        name = url.searchParams.get('name');
+      assert(
+        skillId && name && name.length <= 255,
+        400,
+        'INVALID_UPLOAD',
+        'Specificare skillId e name.',
+      );
+      skillById(await readState(), skillId);
+      const bytes = await boundedBody(request, MAX_DOCUMENT_SIZE);
+      validateDocument(bytes);
+      return json(
+        // Serialized like saveSkill, which rewrites the whole skill row from the state it loaded:
+        // racing it unlocked, one of the two would write a stale `document` back.
+        await mutate(async (s, client) => {
+          const document = { id: randomUUID(), name: safeName(name), size: bytes.length };
+          await client.query('INSERT INTO files VALUES($1,$2)', [document.id, bytes]);
+          attachSkillDocument(s, a, skillId, document);
+          return { ...document, url: `/api/skill-docs/${encodeURIComponent(skillId)}` };
+        }, true),
         201,
       );
     }

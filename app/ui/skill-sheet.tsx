@@ -34,6 +34,8 @@ export interface SheetSkill {
   hasEvidence: boolean;
   reason?: string;
   waitingSeconds?: number;
+  /** Whether the skill has an explanatory PDF; the link is the only thing the sheet needs. */
+  hasDocument?: boolean;
 }
 
 export function SkillSheet({
@@ -123,6 +125,13 @@ function Body({
       </div>
 
       {skill.description && <p>{skill.description}</p>}
+      {skill.hasDocument && (
+        <p>
+          <a href={`/api/skill-docs/${encodeURIComponent(skill.id)}`}>
+            Scarica la spiegazione completa (PDF)
+          </a>
+        </p>
+      )}
 
       {skill.status === 'pending' && skill.waitingSeconds !== undefined && (
         <p className="muted">In attesa di verifica {waiting(skill.waitingSeconds)}.</p>

@@ -103,6 +103,7 @@ export function TreeScreen({
             // here rather than in the browser so the rule never ships to the client.
             canSubmit: node.skill.scope === 'patrol' || role !== 'explorer',
             hasEvidence: evidence !== undefined,
+            hasDocument: node.skill.document !== undefined,
             // The pip shows which form colour the patrol actually chose.
             color: evidence?.form?.color,
             reason: evidence?.status === 'rejected' ? evidence.reason : undefined,

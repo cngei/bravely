@@ -3,6 +3,7 @@ import type {
   Actor,
   State,
   Skill,
+  SkillDocument,
   SkillForm,
   SkillFormDraft,
   Evidence,
@@ -44,6 +45,16 @@ export function manage(a: Actor, troopId: string) {
 }
 function admin(a: Actor) {
   assert(a.role === 'admin', 403, 'FORBIDDEN', 'Riservato agli amministratori Bravely.');
+}
+/** For routes that must refuse before reading a large body. execute() still re-checks. */
+export const requireAdmin = admin;
+/** Called by POST /api/skill-docs once the bytes are in `files`, inside the same transaction. Not a
+    command, so a caller cannot aim it at a file it did not just upload. */
+export function attachSkillDocument(s: State, a: Actor, skillId: string, document: SkillDocument) {
+  admin(a);
+  const skill = skillById(s, skillId);
+  skill.document = document;
+  return skill;
 }
 export function skillById(s: State, id: string): Skill {
   const skill = s.skills.find((k) => k.id === id);
@@ -275,7 +286,15 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
       // A colour dropped from the catalogue entirely: its form still has proofs pointing at it.
       for (const p of old?.forms ?? []) if (!forms.some((f) => f.id === p.id)) retired.set(p.id, p);
 
-      const skill = { ...c.skill, forms, revision };
+      // `document` is server-assigned and outside saveSkill's schema, so the admin form never sends
+      // it back. Without carrying it forward, every save of a title or description would delete
+      // the skill's PDF, silently.
+      const skill: Skill = {
+        ...c.skill,
+        forms,
+        revision,
+        ...(old?.document ? { document: old.document } : {}),
+      };
       const next = s.skills.filter((k) => k.id !== skill.id).concat(skill);
       validateGraph(next);
       s.skills = next;
@@ -419,6 +438,13 @@ export function execute(s: State, a: Actor, c: Command, now = new Date().toISOSt
       e.reviewedAt = now;
       e.reviewedBy = a.id;
       return e;
+    }
+    case 'clearSkillDocument': {
+      admin(a);
+      const skill = skillById(s, c.skillId);
+      // The bytes stay in `files`: nothing in this domain deletes files, uploads included.
+      delete skill.document;
+      return skill;
     }
     default: {
       // Assigning to `never` turns a forgotten Command variant into a compile error

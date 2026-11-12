@@ -44,6 +44,10 @@ export const commandSchema = z.discriminatedUnion('type', [
     })
     .strict(),
   z.object({ type: z.literal('createTroop'), name: label }).strict(),
+  // Removes the reference only. Attaching is not a command: it goes through POST /api/skill-docs,
+  // which writes the bytes itself — a command could point `document` at any file id, including a
+  // patrol's attachments, and sidestep canReadUpload.
+  z.object({ type: z.literal('clearSkillDocument'), skillId: id }).strict(),
   z
     .object({
       type: z.literal('saveExternalUser'),
@@ -91,6 +95,10 @@ export type Command = z.infer<typeof commandSchema>;
 //   createPatrol  the duplicate-name check is case-insensitive per troop, in application code.
 //   saveSkill     validateGraph() checks the whole DAG and the "exactly two initial skills" rule;
 //                 two concurrent saves could compose a cycle neither of them sees.
+//   clearSkillDocument  not an invariant but a lost update: saveSkill rewrites the whole skill
+//                 row, document included, from the state it loaded. Unserialized, a save racing a
+//                 removal (or an upload in POST /api/skill-docs, which locks for the same reason)
+//                 would write the stale document back.
 //
 // Everything else is safe to run concurrently:
 //   startSkill / submitEvidence  UNIQUE (skill_id, target_id) now enforces one proof per target,
@@ -101,5 +109,5 @@ export type Command = z.infer<typeof commandSchema>;
 //                 where two racing writers want the same end state or the later one legitimately
 //                 wins — a human race, not a corrupted invariant.
 //   createTroop   a fresh uuid cannot collide.
-const SERIALIZED = new Set<Command['type']>(['createPatrol', 'saveSkill']);
+const SERIALIZED = new Set<Command['type']>(['createPatrol', 'saveSkill', 'clearSkillDocument']);
 export const needsGlobalLock = (command: Command) => SERIALIZED.has(command.type);

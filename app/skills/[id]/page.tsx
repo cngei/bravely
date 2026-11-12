@@ -62,6 +62,13 @@ export default async function SkillDetailPage({
           </p>
         )}
         {detail.skill.description && <p>{detail.skill.description}</p>}
+        {detail.skill.document && (
+          <p>
+            <a href={`/api/skill-docs/${encodeURIComponent(detail.skill.id)}`}>
+              Scarica la spiegazione completa (PDF)
+            </a>
+          </p>
+        )}
 
         {/* Reuses the dashboard card, so the form, the start button and the submitted answers
             behave identically here — including the read-only mode when locked. */}

@@ -20,6 +20,24 @@ export function validateMedia(b: Buffer) {
   assert(type, 415, 'UNSUPPORTED_MEDIA', 'Formato consentito: JPEG, PNG, GIF, WebP, MP4 o WebM.');
   return type;
 }
+// A skill's explanatory PDF. Kept apart from validateMedia on purpose: the attachment allowlist
+// is what patrols can upload, and it must not open to PDFs because the admin's documents need them.
+export const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024;
+export function validateDocument(b: Buffer) {
+  assert(
+    b.length > 0 && b.length <= MAX_DOCUMENT_SIZE,
+    413,
+    'FILE_TOO_LARGE',
+    'File vuoto o superiore a 10 MiB.',
+  );
+  assert(
+    b.subarray(0, 5).toString('latin1') === '%PDF-',
+    415,
+    'UNSUPPORTED_MEDIA',
+    'Serve un PDF.',
+  );
+  return 'application/pdf';
+}
 export async function boundedBody(request: Request, max: number) {
   assert(
     Number(request.headers.get('content-length') ?? 0) <= max,
