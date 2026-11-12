@@ -14,8 +14,9 @@ describe('management alerts', () => {
     expect(managementAlerts(people, leader)).toEqual({ unassigned: 1, toConfirm: 1, total: 2 });
   });
 
-  it('gives an admin every troop and an explorer nothing', () => {
-    expect(managementAlerts(people, { role: 'admin', troopIds: [] }).total).toBe(3);
+  it('counts an admin’s own troops only, and nothing for an explorer', () => {
+    expect(managementAlerts(people, { role: 'admin', troopIds: [] }).total).toBe(0);
+    expect(managementAlerts(people, { role: 'admin', troopIds: ['t2'] }).total).toBe(1);
     expect(managementAlerts(people, { role: 'explorer', troopIds: ['t1'] }).total).toBe(0);
   });
 

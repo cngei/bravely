@@ -300,13 +300,18 @@ export async function createSkillAction(
 }
 
 // The patrol split as CSV (decision 7: no endpoint, no machine token). Returned as a string for the
-// browser to save. Scoped by dashboard(), the same rule as everything else a leader sees: their own
-// troops, or every troop for an admin — so the export cannot show more than the page around it.
+// browser to save. A leader gets what dashboard() shows them, their own troops; an admin gets every
+// troop (see below).
 export async function exportPatrolsAction(): Promise<{ csv?: string; error?: string }> {
   try {
     const actor = await currentActor();
     if (actor.role === 'explorer') return { error: 'Riservato a chi guida un reparto.' };
-    const data = dashboard(await readState(), actor);
+    const state = await readState();
+    // The one place an admin still gets every troop: a file to reuse in the portal is not a page
+    // to scroll, and the plan's decision for J was "the admin exports all".
+    if (actor.role === 'admin')
+      return { csv: patrolsCsv(state.troops, state.patrols, state.people) };
+    const data = dashboard(state, actor);
     if (!('patrols' in data)) return { error: 'Nessun reparto da esportare.' };
     return { csv: patrolsCsv(data.troops, data.patrols, data.people) };
   } catch (error) {

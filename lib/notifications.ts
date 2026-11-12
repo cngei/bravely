@@ -28,9 +28,10 @@ export interface ManagementAlerts {
 }
 
 export function managementAlerts(people: AlertPerson[], actor: AlertActor): ManagementAlerts {
-  // An explorer manages nothing; an admin manages every troop, like dashboard() and manage() say.
+  // An explorer manages nothing. An admin counts only their own troops, like dashboard(): the
+  // dot points at /gestione, which shows exactly those.
   if (actor.role === 'explorer') return { unassigned: 0, toConfirm: 0, total: 0 };
-  const mine = people.filter((p) => actor.role === 'admin' || actor.troopIds.includes(p.troopId));
+  const mine = people.filter((p) => actor.troopIds.includes(p.troopId));
   const unassigned = mine.filter((p) => !p.patrolId).length;
   // A person without a patrol cannot be self-assigned, so the two never overlap.
   const toConfirm = mine.filter((p) => p.patrolId && p.selfAssigned).length;

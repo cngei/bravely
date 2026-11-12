@@ -121,6 +121,15 @@ function LeaderView({ data, alerts }: { data: Dashboard; alerts: ManagementAlert
       {/* The queue used to be every proof ever submitted, unpaginated, above everything else: to
           reach the patrols a leader scrolled past the whole archive. Only what needs a decision
           stays up here; the rest is one click away and says how much it is holding. */}
+      {/* An admin with no CR/VCR duty has no troop here: the dashboard shows only one's own. */}
+      {data.troops.length === 0 && (
+        <p className="muted">
+          Nessun reparto da seguire.{' '}
+          {data.user.role === 'admin' && (
+            <a href="/admin">Catalogo, achievement e organizzazioni esterne sono in Admin.</a>
+          )}
+        </p>
+      )}
       {/* Same count as the dot on the Gestione chip, said in words where the leader starts. */}
       {alerts.total > 0 && (
         <p className="muted">

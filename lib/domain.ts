@@ -628,22 +628,19 @@ export function dashboard(s: State, a: Actor, now = Date.now()) {
       joinablePatrols,
     };
   }
-  const patrols = s.patrols.filter(
-    (p) =>
-      a.role === 'admin' ||
-      (a.role === 'leader' ? a.troopIds.includes(p.troopId) : p.id === own?.id),
+  // An admin is shown their own troops, like any leader — the CR/VCR duties they hold — not
+  // every troop in Italy: hundreds of them one under another is no dashboard. Being admin changes
+  // what they may *do* (manage() still lets them act anywhere, and /admin is theirs), not what the
+  // dashboard, /gestione and /tree put in front of them.
+  const leads = a.role !== 'explorer';
+  const patrols = s.patrols.filter((p) =>
+    leads ? a.troopIds.includes(p.troopId) : p.id === own?.id,
   );
-  const troops = s.troops.filter(
-    (t) =>
-      a.role === 'admin' ||
-      (a.role === 'leader' ? a.troopIds.includes(t.id) : t.id === own?.troopId),
+  const troops = s.troops.filter((t) =>
+    leads ? a.troopIds.includes(t.id) : t.id === own?.troopId,
   );
   const evidence = s.evidence
-    .filter(
-      (e) =>
-        a.role === 'admin' ||
-        (a.role === 'leader' ? a.troopIds.includes(evidenceTroop(s, e)) : e.targetId === own?.id),
-    )
+    .filter((e) => (leads ? a.troopIds.includes(evidenceTroop(s, e)) : e.targetId === own?.id))
     .map((e) => ({
       ...e,
       // Resolved here so no screen has to look a form up by id, and so the chosen colour still

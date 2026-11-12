@@ -47,7 +47,8 @@ export default async function GestionePage() {
           </p>
         )}
         {data.troops.length === 0 && <p className="muted">Nessun reparto da gestire.</p>}
-        {data.troops.length > 0 && <ExportPatrols />}
+        {/* An admin exports every troop even with none of their own (see exportPatrolsAction). */}
+        {(data.troops.length > 0 || actor.role === 'admin') && <ExportPatrols />}
         {data.troops.map((troop) => {
           const patrols = data.patrols.filter((p) => p.troopId === troop.id);
           const people = data.people.filter((p) => p.troopId === troop.id).sort(byManagement);

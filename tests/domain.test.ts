@@ -19,6 +19,8 @@ const admin: Actor = {
   troopIds: [],
   explorerTroopIds: [],
 };
+/** An admin who also leads both fixture troops: the dashboard shows an admin only their own. */
+const overseer: Actor = { ...admin, id: 'overseer', troopIds: ['t1', 't2'] };
 const cr: Actor = { id: 'cr', name: 'CR', role: 'leader', troopIds: ['t1'], explorerTroopIds: [] };
 const explorer: Actor = {
   id: 'e1',
@@ -108,6 +110,22 @@ describe('authorization and patrol membership', () => {
     expect(() =>
       execute(s, explorer, { type: 'startSkill', skillId: 'initial-1', targetId: 't1' }),
     ).toThrow();
+  });
+  it('shows an admin their own troops only, while still letting them act anywhere', () => {
+    const s = fixture();
+    const none = dashboard(s, admin);
+    if (!('patrols' in none)) throw new Error('missing dashboard');
+    expect(none.troops).toEqual([]);
+    expect(none.patrols).toEqual([]);
+    expect(none.people).toEqual([]);
+    const own = dashboard(s, { ...admin, troopIds: ['t1'] });
+    if (!('patrols' in own)) throw new Error('missing dashboard');
+    expect(own.troops.map((t) => t.id)).toEqual(['t1']);
+    expect(own.patrols.map((p) => p.id)).toEqual(['p1', 'p2']);
+    // What changed is what is shown, not what is allowed.
+    expect(() =>
+      execute(s, admin, { type: 'createPatrol', troopId: 't2', name: 'Fuori dai miei' }),
+    ).not.toThrow();
   });
   it('excludes other troops from the leader dashboard', () => {
     const s = fixture(),
@@ -570,12 +588,12 @@ describe('several forms of the same colour', () => {
 // function has to work out for themselves.
 describe('patrol progress', () => {
   const entry = (s: State, patrolId: string, skillId: string) => {
-    const data = dashboard(s, admin);
+    const data = dashboard(s, overseer);
     if (!('patrols' in data)) throw new Error('missing dashboard');
     return data.patrols.find((p) => p.id === patrolId)!.skills.find((k) => k.skillId === skillId)!;
   };
   const patrol = (s: State, patrolId: string) => {
-    const data = dashboard(s, admin);
+    const data = dashboard(s, overseer);
     if (!('patrols' in data)) throw new Error('missing dashboard');
     return data.patrols.find((p) => p.id === patrolId)!;
   };
@@ -646,7 +664,7 @@ describe('patrol progress', () => {
     expect(entry(s, 'p1', 'b').missingPrerequisites).toContain('a');
     expect(s.evidence.find((e) => e.skillId === 'b')?.status).toBe('pending');
     // And the reviewer is told, rather than discovering it when the approve button refuses.
-    const data = dashboard(s, admin);
+    const data = dashboard(s, overseer);
     if (!('patrols' in data)) throw new Error('missing dashboard');
     expect(data.evidence.find((e) => e.skillId === 'b')?.missingPrerequisites).toContain('a');
     expect(() =>
