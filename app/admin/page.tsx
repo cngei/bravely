@@ -5,6 +5,9 @@ import { layout } from '@/lib/tree';
 import { SkillEditor } from '../ui/skill-editor';
 import { AchievementsEditor } from '../ui/achievements-editor';
 import { ExternalTroops, ExternalUsers } from '../ui/external-admin';
+import { cookies } from 'next/headers';
+import { resolveTheme, THEME_COOKIE } from '@/lib/theme';
+import { ThemePicker } from '../ui/theme-picker';
 import { Banner } from '../ui/banner';
 import { Nav } from '../ui/nav';
 import { managementAlerts, type ManagementAlerts } from '@/lib/notifications';
@@ -60,6 +63,13 @@ export default async function AdminPage() {
             implicit: edge.implicit,
           }))}
         />
+
+        <h2>Aspetto</h2>
+        <p className="muted">
+          Anteprima delle grafiche alternative, solo per questo browser. Il default per tutti si
+          imposta con <code>BRAVELY_THEME</code>.
+        </p>
+        <ThemePicker current={resolveTheme((await cookies()).get(THEME_COOKIE)?.value)} />
 
         <h2>Achievement</h2>
         <AchievementsEditor initial={state.achievements} skillCount={state.skills.length} />

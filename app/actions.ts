@@ -5,10 +5,12 @@
 // against Host itself, which is why checkOrigin() is not repeated here.
 import { ZodError } from 'zod';
 import { refresh } from 'next/cache';
+import { cookies } from 'next/headers';
 import { currentActor } from '@/lib/service';
 import { mutate, readState } from '@/lib/db';
 import { dashboard, execute } from '@/lib/domain';
 import { patrolsCsv } from '@/lib/export';
+import { isTheme, THEME_COOKIE } from '@/lib/theme';
 import { commandSchema, needsGlobalLock } from '@/lib/commands';
 import { AppError } from '@/lib/errors';
 import type { Achievement, Skill, SkillDraft, SkillFormDraft, State } from '@/lib/model';
@@ -318,4 +320,22 @@ export async function exportPatrolsAction(): Promise<{ csv?: string; error?: str
     if (error instanceof AppError) return { error: error.message };
     throw error;
   }
+}
+
+// The look is a per-browser preference, but the switch is offered to admins only (PLAN, item K):
+// it is a preview of alternative designs, not a user setting yet. The value is checked against the
+// allowlist, so the cookie can never inject an arbitrary data-theme.
+export async function setThemeAction(theme: string): Promise<ActionResult> {
+  const actor = await currentActor();
+  if (actor.role !== 'admin') return { error: 'Riservato all’amministrazione.' };
+  if (!isTheme(theme)) return { error: 'Tema sconosciuto.' };
+  (await cookies()).set(THEME_COOKIE, theme, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 365,
+    path: '/',
+  });
+  refresh();
+  return { ok: true };
 }

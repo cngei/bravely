@@ -1,0 +1,836 @@
+/* Bravely — "Moderno". A clean, light product look layered over globals.css.
+
+   Every rule is scoped to html[data-theme='moderno'], which adds specificity on top of the base
+   selector it overrides, so this file never needs !important and the parchment theme is untouched.
+
+   What changes: cool off-white page, white surfaces with one hairline and a soft shadow, a fresher
+   green, a sans-serif type system, and no ornament (grain, lozenges, seal, compass all off).
+   What does not: the meaning of colour. Blue and amber are still only the two form paths, green
+   is verified, red is rejected, and every state still has a word next to its colour. */
+
+html[data-theme='moderno'] {
+  --green: #16794a;
+  --green-ink: #0f5a37;
+  --green-soft: #e4f3ea;
+  --blue: #2563b0;
+  --blue-soft: #e6effa;
+  --amber: #b45309;
+  --amber-soft: #fdf0de;
+  --red: #c2352b;
+  --red-soft: #fdeceb;
+
+  --ink: #111827;
+  --muted: #5b6474;
+  --line: #e2e6ec;
+  --line-soft: #eef1f5;
+  --gold: #16794a;
+  --gold-light: #9be3bd;
+
+  --vellum: #ffffff;
+  --surface: #f3f5f8;
+  --parchment-deep: #f1f3f6;
+  --page: #f5f7fa;
+
+  --r-sm: 10px;
+  --r: 16px;
+  --r-lg: 22px;
+
+  --display:
+    var(--font-heading, 'Plus Jakarta Sans'), var(--font-sans, Inter), system-ui, sans-serif;
+  --body: var(--font-sans, Inter), system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --grain: none;
+  --corner: none;
+  --seal: none;
+  --compass: none;
+
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 5%);
+  --shadow: 0 1px 2px rgb(16 24 40 / 4%), 0 4px 14px rgb(16 24 40 / 5%);
+  --shadow-lg: 0 12px 40px rgb(16 24 40 / 16%);
+  --ring: 0 0 0 3px rgb(22 121 74 / 22%);
+}
+
+html[data-theme='moderno'] body {
+  background: radial-gradient(1200px 500px at 50% -120px, #e7f3ec 0%, transparent 70%), var(--page);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+/* Inputs keep 16px: under that iOS Safari zooms on focus. */
+html[data-theme='moderno'] :is(button, input, select, textarea) {
+  font-size: 16px;
+}
+
+/* ---------- type ---------- */
+
+/* Sentence case, tight tracking: no small caps, no carved letter-spacing. */
+html[data-theme='moderno']
+  :is(
+    h1,
+    h2,
+    h3,
+    h4,
+    legend,
+    .banner-name,
+    .badge,
+    .ribbon,
+    .chip,
+    button,
+    .button-link,
+    th,
+    .meter-label,
+    summary
+  ) {
+  letter-spacing: normal;
+}
+
+html[data-theme='moderno'] h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+html[data-theme='moderno'] h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 2.5rem 0 0.85rem;
+}
+
+html[data-theme='moderno'] h2::after {
+  background: var(--line);
+  height: 1px;
+}
+
+html[data-theme='moderno'] h3 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+html[data-theme='moderno'] a {
+  color: var(--green);
+  font-weight: 500;
+  text-decoration-color: rgb(22 121 74 / 35%);
+}
+
+html[data-theme='moderno'] a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ---------- banner: a light top bar instead of a leather plaque ---------- */
+
+html[data-theme='moderno'] .banner {
+  background: rgb(255 255 255 / 82%);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  padding: 0.8rem 1rem 0.8rem 1.1rem;
+  position: sticky;
+  top: 0.75rem;
+  z-index: 20;
+}
+
+html[data-theme='moderno'] .banner-logo {
+  height: 2.75rem;
+}
+
+html[data-theme='moderno'] .banner-mark {
+  background: var(--green);
+  border: none;
+  box-shadow: none;
+  color: #fff;
+}
+
+html[data-theme='moderno'] .banner-name {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+html[data-theme='moderno'] .banner-event {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  opacity: 1;
+}
+
+html[data-theme='moderno'] .banner nav {
+  gap: 0.35rem;
+}
+
+/* Nav chips as quiet text tabs; the active one is a soft green pill. */
+html[data-theme='moderno'] .banner .chip {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+html[data-theme='moderno'] .banner .chip:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+html[data-theme='moderno'] .banner .chip[data-active] {
+  background: var(--green-soft);
+  border-color: transparent;
+  color: var(--green-ink);
+}
+
+html[data-theme='moderno'] .banner button,
+html[data-theme='moderno'] .banner button[data-variant='ghost'] {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+html[data-theme='moderno'] .banner button:hover:not(:disabled) {
+  background: var(--surface);
+}
+
+html[data-theme='moderno'] .nav-dot {
+  border-color: #fff;
+}
+
+/* ---------- surfaces ---------- */
+
+html[data-theme='moderno'] :is(.card, .editor-panel, .tree-flow) {
+  box-shadow: var(--shadow);
+}
+
+html[data-theme='moderno'] :is(.card, .editor-panel)::before {
+  display: none;
+}
+
+html[data-theme='moderno'] .card {
+  background: #fff;
+  border-color: var(--line);
+  padding: 1.15rem 1.3rem;
+}
+
+/* State as a tinted surface plus a coloured edge stripe: quick to scan down a long queue. */
+html[data-theme='moderno'] .card[data-status],
+html[data-theme='moderno'] .card[data-color] {
+  background-image: none;
+  box-shadow:
+    inset 4px 0 0 var(--edge, transparent),
+    var(--shadow);
+}
+
+html[data-theme='moderno'] .card[data-status='pending'] {
+  --edge: var(--ink);
+  border-color: var(--line);
+}
+
+html[data-theme='moderno'] .card[data-status='approved'] {
+  --edge: var(--green);
+  background-color: #f6fbf8;
+  border-color: #cfe8da;
+}
+
+html[data-theme='moderno'] .card[data-status='rejected'] {
+  --edge: var(--red);
+  background-color: #fff8f7;
+  border-color: #f3d2cf;
+}
+
+html[data-theme='moderno'] .card[data-color='blue'] {
+  --edge: var(--blue);
+  background-color: #f7faff;
+  border-color: #d3e2f5;
+}
+
+html[data-theme='moderno'] .card[data-color='amber'] {
+  --edge: var(--amber);
+  background-color: #fffaf3;
+  border-color: #f3dfc0;
+}
+
+/* ---------- progress ---------- */
+
+html[data-theme='moderno'] .meter-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+html[data-theme='moderno'] .meter {
+  background: #e8ecf1;
+  border: none;
+  box-shadow: none;
+  height: 10px;
+}
+
+html[data-theme='moderno'] .meter > span {
+  background: linear-gradient(90deg, #1f9a5e, var(--green));
+  box-shadow: none;
+}
+
+/* ---------- badges, ribbons, chips ---------- */
+
+html[data-theme='moderno'] .badge {
+  background: var(--surface);
+  border-color: transparent;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+}
+
+html[data-theme='moderno'] .badge[data-status='completed'] {
+  background: var(--green-soft);
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--green-ink);
+}
+
+html[data-theme='moderno'] .badge[data-status='pending'] {
+  background: var(--ink);
+  border-color: transparent;
+  box-shadow: none;
+  color: #fff;
+}
+
+html[data-theme='moderno'] .badge[data-status='rejected'] {
+  background: var(--red-soft);
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--red);
+}
+
+html[data-theme='moderno'] .badge[data-status='available'],
+html[data-theme='moderno'] .badge[data-status='started'] {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+html[data-theme='moderno'] .badge[data-color='blue'] {
+  background: var(--blue-soft);
+  border-color: transparent;
+  color: var(--blue);
+}
+
+html[data-theme='moderno'] .badge[data-color='amber'] {
+  background: var(--amber-soft);
+  border-color: transparent;
+  color: var(--amber);
+}
+
+/* Achievements: rounded pills instead of chevroned rank ribbons. */
+html[data-theme='moderno'] .ribbon {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  box-shadow: var(--shadow-sm);
+  clip-path: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+}
+
+html[data-theme='moderno'] .ribbon[data-earned] {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+html[data-theme='moderno'] .chip {
+  background: #fff;
+  border-color: var(--line);
+  box-shadow: none;
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 600;
+  min-height: 2.4rem;
+  padding: 0.5rem 0.95rem;
+}
+
+html[data-theme='moderno'] .chip:hover {
+  border-color: #cdd3dc;
+}
+
+html[data-theme='moderno'] .chip[data-active] {
+  background: var(--ink);
+  border-color: var(--ink);
+  box-shadow: none;
+  color: #fff;
+}
+
+/* ---------- controls ---------- */
+
+html[data-theme='moderno'] :is(input, select, textarea) {
+  background: #fff;
+  border-color: #d5dae2;
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+html[data-theme='moderno'] :is(input, select, textarea):focus {
+  border-color: var(--green);
+  box-shadow: var(--ring);
+  outline: none;
+}
+
+html[data-theme='moderno'] textarea {
+  border-radius: var(--r-sm);
+}
+
+html[data-theme='moderno'] :is(input, select, textarea, button, a, summary):focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+html[data-theme='moderno'] code {
+  background: var(--surface);
+}
+
+html[data-theme='moderno'] :is(button, .button-link) {
+  background: var(--green);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-sm);
+  color: #fff;
+  font-family: var(--body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.05s;
+}
+
+html[data-theme='moderno'] :is(button, .button-link):hover:not(:disabled) {
+  background: var(--green-ink);
+}
+
+html[data-theme='moderno'] button:active:not(:disabled) {
+  box-shadow: none;
+  transform: translateY(1px);
+}
+
+html[data-theme='moderno'] :is(button, .button-link)[data-variant='ghost'] {
+  background: #fff;
+  border-color: #d5dae2;
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+}
+
+html[data-theme='moderno'] :is(button, .button-link)[data-variant='ghost']:hover:not(:disabled) {
+  background: var(--surface);
+}
+
+html[data-theme='moderno'] button[data-path='blue'] {
+  background: var(--blue);
+  border-color: transparent;
+}
+
+html[data-theme='moderno'] button[data-path='amber'] {
+  background: var(--amber);
+  border-color: transparent;
+}
+
+html[data-theme='moderno'] button[data-path='blue']:hover:not(:disabled) {
+  background: #1d4f8f;
+}
+
+html[data-theme='moderno'] button[data-path='amber']:hover:not(:disabled) {
+  background: #92400e;
+}
+
+html[data-theme='moderno'] button[data-path='blue'][data-variant='ghost'] {
+  background: #fff;
+  border-color: #c4d7f0;
+  color: var(--blue);
+}
+
+html[data-theme='moderno'] button[data-path='amber'][data-variant='ghost'] {
+  background: #fff;
+  border-color: #efd3a8;
+  color: var(--amber);
+}
+
+html[data-theme='moderno'] button[data-path='blue'][data-variant='ghost']:hover:not(:disabled) {
+  background: var(--blue-soft);
+}
+
+html[data-theme='moderno'] button[data-path='amber'][data-variant='ghost']:hover:not(:disabled) {
+  background: var(--amber-soft);
+}
+
+html[data-theme='moderno'] button[data-variant='danger'] {
+  background: #fff;
+  border-color: #f0c4c0;
+  box-shadow: var(--shadow-sm);
+  color: var(--red);
+}
+
+html[data-theme='moderno'] button[data-variant='danger']:hover:not(:disabled) {
+  background: var(--red-soft);
+}
+
+html[data-theme='moderno'] :is(input, select, textarea):disabled {
+  background: var(--surface);
+  box-shadow: none;
+}
+
+html[data-theme='moderno'] label {
+  font-size: 0.9rem;
+}
+
+html[data-theme='moderno'] fieldset {
+  background: #f8fafc;
+  border-color: var(--line);
+}
+
+html[data-theme='moderno'] fieldset[data-color='blue'] {
+  background: #f5f9ff;
+  border-color: #d3e2f5;
+}
+
+html[data-theme='moderno'] fieldset[data-color='amber'] {
+  background: #fffaf3;
+  border-color: #f3dfc0;
+}
+
+html[data-theme='moderno'] legend {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+html[data-theme='moderno'] input[type='file']::file-selector-button {
+  background: #fff;
+  border-color: #d5dae2;
+  border-radius: var(--r-sm);
+  font-family: var(--body);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+html[data-theme='moderno'] details {
+  border-top-color: var(--line);
+}
+
+html[data-theme='moderno'] summary {
+  color: var(--muted);
+  font-family: var(--body);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* ---------- tables ---------- */
+
+html[data-theme='moderno'] table.data {
+  background: #fff;
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+html[data-theme='moderno'] table.data :is(th, td) {
+  border-bottom-color: var(--line-soft);
+}
+
+html[data-theme='moderno'] table.data th {
+  background: #f8fafc;
+  color: var(--muted);
+  font-family: var(--body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+html[data-theme='moderno'] table.data tbody tr:nth-child(even) td {
+  background: none;
+}
+
+html[data-theme='moderno'] table.data tbody tr:hover td {
+  background: #fafbfc;
+}
+
+/* ---------- skill tree ---------- */
+
+/* A light canvas with a dot grid, the convention of node editors, and soft green hills below. */
+html[data-theme='moderno'] .tree-flow {
+  background-color: #fbfcfd;
+  background-image: radial-gradient(circle, #d9dee6 1px, transparent 1.2px);
+  background-blend-mode: normal;
+  background-size: 22px 22px;
+  border-color: var(--line);
+  --xy-edge-stroke-default: #9aa4b2;
+  --xy-edge-stroke-width-default: 1.5;
+  --xy-controls-button-background-color-default: #fff;
+  --xy-controls-button-background-color-hover-default: #f3f5f8;
+  --xy-controls-button-color-default: #111827;
+  --xy-controls-button-color-hover-default: #16794a;
+  --xy-controls-button-border-color-default: #e2e6ec;
+  --xy-controls-box-shadow-default: 0 1px 2px rgb(16 24 40 / 6%), 0 4px 12px rgb(16 24 40 / 8%);
+}
+
+html[data-theme='moderno'] .tree-flow::after {
+  display: none;
+}
+
+html[data-theme='moderno'] .tree-layer-far {
+  color: #e6f2ea;
+}
+
+html[data-theme='moderno'] .tree-layer-mid {
+  color: #cfe6d8;
+}
+
+html[data-theme='moderno'] .tree-layer-near {
+  color: #b2d6c0;
+}
+
+html[data-theme='moderno'] .skill-card {
+  background: #fff;
+  border-color: var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 0.5rem 0.65rem;
+  transition:
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+
+html[data-theme='moderno'] .skill-node:hover .skill-card {
+  box-shadow:
+    0 2px 4px rgb(16 24 40 / 6%),
+    0 10px 24px rgb(16 24 40 / 10%);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme='moderno'] .skill-node:hover .skill-card {
+    transform: none;
+  }
+}
+
+html[data-theme='moderno'] .skill-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
+html[data-theme='moderno'] .skill-desc {
+  font-size: 0.68rem;
+}
+
+/* The medallion becomes a flat badge with a coloured ring: state colour, no bevel. */
+html[data-theme='moderno'] .skill-emblem {
+  background: #fff;
+  border: 2.5px solid #cdd3dc;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+
+html[data-theme='moderno'] .skill-emblem::before {
+  border: 1px solid currentColor;
+  inset: -6px;
+  opacity: 0.12;
+}
+
+html[data-theme='moderno'] .skill-glyph {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+html[data-theme='moderno'] .skill-emblem[data-status='completed'] {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+html[data-theme='moderno'] .skill-emblem[data-status='completed']::before {
+  border-color: var(--green);
+  opacity: 0.25;
+}
+
+html[data-theme='moderno'] .skill-emblem[data-status='pending'][data-color='blue'] {
+  background: var(--blue-soft);
+}
+
+html[data-theme='moderno'] .skill-emblem[data-status='pending'][data-color='amber'] {
+  background: var(--amber-soft);
+}
+
+html[data-theme='moderno'] .skill-emblem[data-status='rejected'] {
+  background: var(--red-soft);
+}
+
+html[data-theme='moderno'] .skill-emblem[data-status='locked'] {
+  background: #f3f5f8;
+  border-color: #dde2e9;
+  border-style: dashed;
+  box-shadow: none;
+  color: #9aa4b2;
+}
+
+html[data-theme='moderno'] .skill-node[data-status='locked'] .skill-card {
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+html[data-theme='moderno'] .skill-pip {
+  background: #fff;
+  border-color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-theme='moderno'] .skill-pip[data-pip='locked'] {
+  background: #8a94a3;
+}
+
+html[data-theme='moderno'] .skill-pip[data-pip='completed'] {
+  background: var(--green-ink);
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-theme='moderno'] .skill-pip[data-pip='none'] {
+  border-color: #dde2e9;
+}
+
+/* ---------- skill sheet ---------- */
+
+html[data-theme='moderno'] dialog.sheet {
+  background: #fff;
+  border-color: var(--line);
+  box-shadow: var(--shadow-lg);
+  color: var(--ink);
+}
+
+html[data-theme='moderno'] dialog.sheet::backdrop {
+  backdrop-filter: blur(3px);
+  background: rgb(17 24 39 / 42%);
+}
+
+/* The grabber of a bottom sheet, drawn as one. */
+html[data-theme='moderno'] .sheet-body::before {
+  background: #d5dae2;
+  border-radius: var(--pill);
+  height: 5px;
+  opacity: 1;
+  width: 40px;
+}
+
+html[data-theme='moderno'] .sheet-head {
+  background: #fff;
+  box-shadow: 0 1px 0 var(--line);
+}
+
+@media (min-width: 40rem) {
+  html[data-theme='moderno'] dialog.sheet {
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* ---------- admin ---------- */
+
+html[data-theme='moderno'] .editor-panel {
+  background: #fff;
+  border-color: var(--line);
+}
+
+html[data-theme='moderno'] .editor-node {
+  background: #fff;
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+html[data-theme='moderno'] .editor-node[data-scope='troop'] {
+  background: var(--green-soft);
+  border-color: #b9dfc9;
+}
+
+html[data-theme='moderno'] .editor-node[data-selected] {
+  border-color: var(--green);
+  box-shadow: var(--ring), var(--shadow);
+}
+
+html[data-theme='moderno'] .field-row {
+  background: #f8fafc;
+  border-color: var(--line);
+}
+
+html[data-theme='moderno'] .tree-notice {
+  background: var(--ink);
+  border: none;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ---------- phones ---------- */
+
+@media (max-width: 40rem) {
+  html[data-theme='moderno'] .banner {
+    top: 0.5rem;
+  }
+
+  html[data-theme='moderno'] table.data tr {
+    background: #fff;
+    border-color: var(--line);
+    box-shadow: var(--shadow);
+  }
+
+  html[data-theme='moderno'] table.data td[data-label]::before {
+    font-family: var(--body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+}
+
+/* ---------- fixes found on screenshots ---------- */
+
+html[data-theme='moderno'] .banner-identity {
+  color: var(--ink);
+}
+
+html[data-theme='moderno'] .banner-event {
+  letter-spacing: normal;
+}
+
+/* React Flow's zoom controls are <button>s too: keep them as the quiet white squares they are,
+   not as green action buttons. */
+html[data-theme='moderno'] .react-flow__controls {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+html[data-theme='moderno'] .react-flow__controls-button {
+  background: #fff;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--ink);
+  min-height: 0;
+  padding: 0;
+}
+
+html[data-theme='moderno'] .react-flow__controls-button:hover:not(:disabled) {
+  background: var(--surface);
+  color: var(--green);
+}
+
+/* Inter sets taller than Garamond: two lines fit the fixed node height, three were cut mid-line. */
+html[data-theme='moderno'] .skill-desc {
+  -webkit-line-clamp: 2;
+  line-height: 1.35;
+}
+
+/* Patrol names on the dashboard are headings that happen to be links. */
+html[data-theme='moderno'] .card-head h3 a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+html[data-theme='moderno'] .card-head h3 a:hover {
+  color: var(--green);
+  text-decoration: underline;
+}
