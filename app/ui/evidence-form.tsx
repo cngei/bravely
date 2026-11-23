@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import type { SkillForm } from '@/lib/model';
+import { useRef, useState } from 'react';
+import type { Field, SkillForm } from '@/lib/model';
 import { submitEvidenceAction } from '@/app/actions';
 
 // Matches the byte-sniffed allowlist in lib/files.ts. Advisory only — the server decides.
@@ -26,6 +26,93 @@ async function upload(skillId: string, targetId: string, files: File[]): Promise
   return ids;
 }
 
+const sameFile = (a: File, b: File) =>
+  a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
+
+function formatSize(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`;
+}
+
+// A native <input multiple> replaces its whole selection on every pick, so choosing a second
+// photo silently dropped the first. The chosen files live in state instead: each pick appends,
+// and each file can be removed on its own. Nothing is uploaded until the form is sent, so a
+// removed file never reaches the server.
+function FileField({
+  id,
+  field,
+  files,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  field: Field;
+  files: File[];
+  disabled?: boolean;
+  onChange: (files: File[]) => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const min = field.minFiles ?? 1,
+    max = field.maxFiles ?? 10;
+  const full = files.length >= max;
+
+  function add(picked: FileList | null) {
+    const fresh = Array.from(picked ?? []).filter(
+      (file) => file.size > 0 && !files.some((kept) => sameFile(kept, file)),
+    );
+    onChange([...files, ...fresh].slice(0, max));
+    // Cleared so picking the same file again after removing it still fires onChange.
+    if (input.current) input.current.value = '';
+  }
+
+  return (
+    <>
+      <input
+        ref={input}
+        type="file"
+        accept={ACCEPT}
+        multiple={max > 1}
+        hidden
+        tabIndex={-1}
+        onChange={(event) => add(event.currentTarget.files)}
+      />
+      {files.length > 0 && (
+        <ul className="stack" style={{ listStyle: 'none', padding: 0, margin: '0.25rem 0' }}>
+          {files.map((file, index) => (
+            <li key={`${file.name}-${file.size}-${file.lastModified}`} className="row">
+              <span>
+                {file.name} <span className="muted">· {formatSize(file.size)}</span>
+              </span>
+              <button
+                type="button"
+                data-variant="ghost"
+                aria-label={`Rimuovi ${file.name}`}
+                title="Rimuovi"
+                disabled={disabled}
+                onClick={() => onChange(files.filter((_, i) => i !== index))}
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button
+        id={id}
+        type="button"
+        data-variant="ghost"
+        disabled={disabled || full}
+        onClick={() => input.current?.click()}
+      >
+        {files.length ? 'Aggiungi altri file' : 'Scegli file'}
+      </button>
+      <p className="muted">
+        {files.length} di {max} file · servono almeno {min}, max 25 MiB ciascuno.
+      </p>
+    </>
+  );
+}
+
 export function EvidenceForm({
   skillId,
   targetId,
@@ -47,7 +134,11 @@ export function EvidenceForm({
   const [error, setError] = useState<string>();
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Keyed by form and field: two forms can share a field id (see the fieldset key below), and
+  // files picked in one must not carry over into the other.
+  const [files, setFiles] = useState<Record<string, File[]>>({});
   const form = forms.find((f) => f.id === formId) ?? forms[0];
+  const fileKey = (fieldId: string) => `${form.id}:${fieldId}`;
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,6 +148,17 @@ export function EvidenceForm({
     const data = new FormData(element);
     setError(undefined);
     setSent(false);
+    // The file inputs are cleared after every pick, so `required` cannot guard them: count here.
+    // Advisory, like ACCEPT: the server re-checks min and max.
+    for (const entry of form.fields) {
+      if (entry.type !== 'file') continue;
+      const count = files[fileKey(entry.id)]?.length ?? 0,
+        min = entry.minFiles ?? 1;
+      if ((entry.required || count > 0) && count < min) {
+        setError(`«${entry.label}»: servono almeno ${min} file, ne hai scelti ${count}.`);
+        return;
+      }
+    }
     setBusy(true);
     try {
       const answers: Record<string, string | string[]> = {};
@@ -66,11 +168,9 @@ export function EvidenceForm({
           if (value || entry.required) answers[entry.id] = value;
           continue;
         }
-        const files = data
-          .getAll(entry.id)
-          .filter((value): value is File => value instanceof File && value.size > 0);
-        if (files.length || entry.required)
-          answers[entry.id] = await upload(skillId, targetId, files);
+        const chosen = files[fileKey(entry.id)] ?? [];
+        if (chosen.length || entry.required)
+          answers[entry.id] = await upload(skillId, targetId, chosen);
       }
       const comment = String(data.get(COMMENT) ?? '').trim();
       const result = await submitEvidenceAction({
@@ -86,6 +186,7 @@ export function EvidenceForm({
       else if (onSubmitted) onSubmitted();
       else {
         element.reset();
+        setFiles({});
         setSent(true);
       }
     } catch (failure) {
@@ -138,20 +239,13 @@ export function EvidenceForm({
                   disabled={disabled}
                 />
               ) : (
-                <>
-                  <input
-                    id={`${skillId}-${entry.id}`}
-                    name={entry.id}
-                    type="file"
-                    accept={ACCEPT}
-                    multiple={(entry.maxFiles ?? 10) > 1}
-                    required={entry.required}
-                    disabled={disabled}
-                  />
-                  <p className="muted">
-                    Da {entry.minFiles ?? 1} a {entry.maxFiles ?? 10} file, max 25 MiB ciascuno.
-                  </p>
-                </>
+                <FileField
+                  id={`${skillId}-${entry.id}`}
+                  field={entry}
+                  files={files[fileKey(entry.id)] ?? []}
+                  disabled={disabled || busy}
+                  onChange={(next) => setFiles((all) => ({ ...all, [fileKey(entry.id)]: next }))}
+                />
               )}
             </div>
           ))}
