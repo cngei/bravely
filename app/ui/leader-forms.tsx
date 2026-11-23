@@ -42,12 +42,17 @@ export function StartSkillForm({ skillId, targetId }: { skillId: string; targetI
 // onlyReject covers evidence that is already approved: the domain allows revoking it with a
 // reason ([lib/domain.ts:343]), but approving it again is an invalid transition, so that button
 // is not offered.
+// canPublish (public skill, not just revoking) adds the privacy check to the same card as an
+// opt-in box, off by default. It only counts with «Approva»; skipped, the «Seconda verifica»
+// block still appears on the approved card, so the second pass cannot get lost.
 export function ReviewForm({
   evidenceId,
   onlyReject,
+  canPublish,
 }: {
   evidenceId: string;
   onlyReject?: boolean;
+  canPublish?: boolean;
 }) {
   const [state, action] = useActionState(reviewEvidenceAction.bind(null, evidenceId), idle);
   return (
@@ -56,6 +61,18 @@ export function ReviewForm({
         Motivazione {onlyReject ? '(obbligatoria)' : '(obbligatoria per il rigetto)'}
       </label>
       <textarea id={`reason-${evidenceId}`} name="reason" rows={2} maxLength={5000} />
+      {canPublish && !onlyReject && (
+        <>
+          <label className="row" style={{ marginTop: '0.5rem' }}>
+            <input type="checkbox" name="publish" />
+            Approva e rendi consultabile dalle altre pattuglie
+          </label>
+          <p className="muted">
+            Ricontrolla risposte e allegati (volti, nomi, luoghi riconoscibili) prima di spuntarla.
+            Vale solo con «Approva»; si può revocare solo rigettando la prova.
+          </p>
+        </>
+      )}
       <div className="row" style={{ marginTop: '0.5rem' }}>
         {/* Two buttons, one form: the name/value pair tells the action which decision it was. */}
         {!onlyReject && (

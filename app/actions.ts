@@ -116,7 +116,19 @@ export async function reviewEvidenceAction(
   const decision = field(data, 'decision') === 'reject' ? 'reject' : 'approve';
   const reason = field(data, 'reason').trim();
   // The schema is strict, so `reason` is sent only where the domain accepts it.
-  return run({ type: 'reviewEvidence', evidenceId, decision, ...(reason ? { reason } : {}) });
+  const reviewed = await run({
+    type: 'reviewEvidence',
+    evidenceId,
+    decision,
+    ...(reason ? { reason } : {}),
+  });
+  // The privacy check is offered in the same card, but stays its own command: approval and
+  // publication are still two decisions, recorded separately (reviewedBy vs publishedBy).
+  if (reviewed.error || decision !== 'approve' || field(data, 'publish') !== 'on') return reviewed;
+  const published = await run({ type: 'publishEvidence', evidenceId });
+  return published.error
+    ? { error: `Prova approvata, ma non resa consultabile: ${published.error}` }
+    : published;
 }
 
 export async function publishEvidenceAction(evidenceId: string): Promise<ActionResult> {

@@ -102,7 +102,12 @@ function LeaderView({ data, alerts }: { data: Dashboard; alerts: ManagementAlert
       {/* Approved evidence stays actionable: the domain allows revoking it with a reason,
           and the spec asks for exactly that. Rejected evidence has no legal transition
           until the patrol resubmits. */}
-      {evidence.status === 'pending' && <ReviewForm evidenceId={evidence.id} />}
+      {evidence.status === 'pending' && (
+        <ReviewForm
+          evidenceId={evidence.id}
+          canPublish={data.skills.find((k) => k.id === evidence.skillId)?.public}
+        />
+      )}
       {evidence.status === 'approved' &&
         !evidence.publishedAt &&
         data.skills.find((k) => k.id === evidence.skillId)?.public && (
