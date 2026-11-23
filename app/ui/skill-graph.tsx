@@ -45,6 +45,8 @@ export interface GraphNode {
   /** Only for pending evidence. */
   waitingSeconds?: number;
   hasDocument?: boolean;
+  /** Public skill: once approved and published, other patrols can read the proof. */
+  shareable?: boolean;
   x: number;
   y: number;
 }
@@ -170,6 +172,7 @@ export function SkillGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
         reason: open.reason,
         waitingSeconds: open.waitingSeconds,
         hasDocument: open.hasDocument,
+        shareable: open.shareable,
       }
     : null;
 

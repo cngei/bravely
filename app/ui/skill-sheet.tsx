@@ -36,6 +36,8 @@ export interface SheetSkill {
   waitingSeconds?: number;
   /** Whether the skill has an explanatory PDF; the link is the only thing the sheet needs. */
   hasDocument?: boolean;
+  /** Public skill: once approved and published, other patrols can read the proof. */
+  shareable?: boolean;
 }
 
 export function SkillSheet({
@@ -162,6 +164,7 @@ function Body({
             forms={skill.forms}
             disabled={!interactive}
             disabledReason={why}
+            shareable={skill.shareable}
             onSubmitted={onSubmitted}
           />
         </>

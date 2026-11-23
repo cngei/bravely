@@ -67,6 +67,7 @@ export function SkillCard({
             forms={skill.forms}
             disabled={!interactive}
             disabledReason={why}
+            shareable={skill.public}
           />
         </div>
       )}

@@ -119,6 +119,7 @@ export function EvidenceForm({
   forms,
   disabled,
   disabledReason,
+  shareable,
   onSubmitted,
 }: {
   skillId: string;
@@ -127,6 +128,8 @@ export function EvidenceForm({
   /** Consultation mode: the questions are readable, submission is not possible. */
   disabled?: boolean;
   disabledReason?: string;
+  /** Public skill: the patrol is told before sending that the proof may become readable. */
+  shareable?: boolean;
   /** Takes over the confirmation, e.g. a sheet that closes and confirms on the page behind it. */
   onSubmitted?: () => void;
 }) {
@@ -263,6 +266,14 @@ export function EvidenceForm({
         maxLength={5000}
         disabled={disabled}
       />
+      {/* Told before sending, not after: what is shared is decided by what goes in the form. */}
+      {shareable && !disabled && (
+        <p className="muted" style={{ marginTop: '0.75rem' }}>
+          Questa skill è condivisa: se chi verifica approva la prova e la rende consultabile,
+          risposte, foto e video potranno essere visti dalle altre pattuglie che hanno conseguito la
+          skill.
+        </p>
+      )}
       <div className="row" style={{ marginTop: '0.75rem' }}>
         <button type="submit" disabled={busy || disabled}>
           {busy ? 'Invio…' : 'Invia per la verifica'}
