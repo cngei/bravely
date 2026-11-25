@@ -1,0 +1,18 @@
+# Keeps local secrets and build output out of the image. .env.local holds SESSION_SECRET and
+# the dev actor: in production every value comes from the environment instead.
+.env*
+!.env.example
+.git
+.github
+node_modules
+.next
+build
+coverage
+tests
+*.tsbuildinfo
+*.log
+CODEBASE-STATE.md
+PLAN.md
+Tiltfile
+compose.yaml
+mise.toml
